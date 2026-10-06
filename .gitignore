@@ -1,0 +1,43 @@
+# Dependencias Node.js
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Builds y Bundles
+**/dist/
+**/build/
+**/out/
+.next/
+
+# Rust y Tauri builds
+**/target/
+**/src-tauri/target/
+Cargo.lock
+
+# Archivos pesados de medios
+VIDEOS/
+
+# Estado y cadenas locales P2P / Base de datos temporal
+.apocalipto_chain/
+*.log
+*.tmp
+
+# Archivos de entorno y credenciales
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Archivos de Zomboid temporales
+*.bak

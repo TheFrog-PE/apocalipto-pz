@@ -1,0 +1,19 @@
+{
+  "name": "apocalipto-core",
+  "version": "1.0.0",
+  "description": "Motor Criptográfico y Blockchain de Supervivencia para Apocalipto PZ",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/test-blockchain.js"
+  },
+  "keywords": [
+    "project-zomboid",
+    "blockchain",
+    "p2p",
+    "merkle-tree",
+    "survival"
+  ],
+  "author": "Apocalipto PZ",
+  "license": "MIT"
+}

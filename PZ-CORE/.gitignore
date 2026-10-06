@@ -1,0 +1,41 @@
+# =========================================================================
+# PZ-CORE .gitignore — Protección de datos sensibles del Enjambre P2P
+# =========================================================================
+
+# === KEYSTORE & IDENTIDADES CRIPTOGRÁFICAS ===
+# NUNCA subir a repositorios públicos o privados compartidos
+.apocalipto_chain/
+keystore/
+keystore.json
+*.keystore
+
+# === LOGS DE AMENAZAS (HONEYPOT & THREAT INTEL) ===
+# Contiene IPs y fingerprints de atacantes
+threat_log.jsonl
+*.threat.log
+
+# === ARCHIVOS DE ESTADO DEL ENJAMBRE ===
+# Archivos de runtime que no deben versionarse
+bridge/
+applicants.json
+approved_nodes.json
+rejected_nodes.json
+gateway.json
+
+# === DEPENDENCIAS ===
+node_modules/
+
+# === VARIABLES DE ENTORNO ===
+.env
+.env.local
+.env.production
+.env.*.local
+
+# === CONFIGS DEL SERVIDOR PZ (contienen seeds y passwords) ===
+# Copiar a Zomboid/Server manualmente, no versionar
+server_configs/ApocaliptoPZ.ini
+server_configs/ApocaliptoPZ_SandboxVars.lua
+
+# === LOGS GENERALES ===
+*.log
+npm-debug.log*

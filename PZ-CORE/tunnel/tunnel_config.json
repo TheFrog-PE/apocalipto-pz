@@ -1,0 +1,18 @@
+{
+  "gameTunnel": {
+    "host": "rails-switching.tun.ply.gg",
+    "ip": "147.185.221.215",
+    "port": 63854,
+    "localPort": 16261,
+    "protocol": "UDP",
+    "provider": "Playit.gg",
+    "datacenter": "Santiago, Chile"
+  },
+  "bridgeTunnel": {
+    "url": "https://glance-civilization-samuel-very.trycloudflare.com",
+    "localPort": 19842,
+    "protocol": "HTTPS",
+    "provider": "Cloudflare Tunnel"
+  },
+  "configuredAt": "2026-09-29T20:55:00Z"
+}

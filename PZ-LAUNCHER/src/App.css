@@ -1,0 +1,129 @@
+/* Estilos tácticos globales complementarios a Tailwind */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #121212; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+
+/* ===========================================================
+   FONDO: DESATURACIÓN + TINTE MILITAR
+   =========================================================== */
+.bg-tactical-filter {
+  filter:
+    saturate(0.25)
+    brightness(0.55)
+    contrast(1.05)
+    sepia(0.18)
+    hue-rotate(160deg);
+}
+
+/* ===========================================================
+   EFECTO CRT / TV DE TUBO — LÍNEAS HORIZONTALES DENSAS
+   Simula la pantalla de fósforo de un monitor CRT con
+   franjas horizontales finas bien visibles + aberración RGB
+   =========================================================== */
+
+/* Scanlines CRT — líneas oscuras finas y densas (2px fondo, 2px línea) */
+.crt-scanlines {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent               0px,
+      transparent               2px,
+      rgba(0, 0, 0, 0.75)      2px,
+      rgba(0, 0, 0, 0.75)      4px
+    );
+  animation: crtFlicker 0.12s steps(2, end) infinite;
+}
+
+/* Aberración cromática RGB sutil en cada línea — fósforos RGB */
+.crt-rgb {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 30,  30,  0.05) 0px,
+      rgba(30,  255, 30,  0.04) 1px,
+      rgba(30,  30,  255, 0.05) 2px,
+      transparent               3px,
+      transparent               4px
+    );
+}
+
+/* ===========================================================
+   EFECTO CRT: VIGNETTE CURVO DE TV DE TUBO
+   =========================================================== */
+.crt-tube {
+  background:
+    radial-gradient(
+      ellipse at 50% 50%,
+      transparent 35%,
+      rgba(0, 0, 0, 0.30) 60%,
+      rgba(0, 0, 0, 0.65) 80%,
+      rgba(0, 0, 0, 0.90) 100%
+    );
+}
+
+.crt-corners::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 120% at   0%   0%, rgba(0,0,0,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse 120% 120% at 100%   0%, rgba(0,0,0,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse 120% 120% at   0% 100%, rgba(0,0,0,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse 120% 120% at 100% 100%, rgba(0,0,0,0.55) 0%, transparent 42%);
+  pointer-events: none;
+}
+
+/* ===========================================================
+   TEXTURA TÁCTICA MILITAR HUD
+   =========================================================== */
+.tactical-mesh {
+  background-image:
+    linear-gradient(to right,  rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.tactical-crossdots {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.20) 1.2px, transparent 1.2px);
+  background-size: 40px 40px;
+  background-position: -0.5px -0.5px;
+}
+
+/* ===========================================================
+   BARRA DE TRACKING VHS (distorsión que recorre la pantalla)
+   =========================================================== */
+.vhs-tracking {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  filter: blur(1px);
+  animation: vhsTracking 9s infinite ease-in-out;
+}
+
+/* ===========================================================
+   KEYFRAMES
+   =========================================================== */
+@keyframes crtFlicker {
+  0%   { opacity: 0.88; }
+  50%  { opacity: 0.94; }
+  100% { opacity: 0.90; }
+}
+
+@keyframes vhsTracking {
+  0%   { top: -10%;  opacity: 0; }
+  15%  { opacity: 0.60; }
+  30%  { top: 110%;  opacity: 0; }
+  70%  { top: -10%;  opacity: 0; }
+  85%  { top: 50%;   opacity: 0.80; height: 18px; }
+  100% { top: 110%;  opacity: 0; }
+}
