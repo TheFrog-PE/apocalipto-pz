@@ -1,0 +1,10 @@
+{
+  "gatewayUrl": "https://bands-vermont-yorkshire-acquisitions.trycloudflare.com",
+  "gameTunnel": {
+    "host": "rails-switching.tun.ply.gg",
+    "port": 63854,
+    "protocol": "UDP"
+  },
+  "alfaNode": "The Frog Host (Apocalipto PZ)",
+  "updatedAt": "2026-10-06T23:45:00Z"
+}
