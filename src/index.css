@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0b0c0e;
+    color: #f0f0f0;
+  }
+
+  h1, h2, h3, h4, h5, h6, button {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* ============================================================
+   ESTILOS TIPOGRÁFICOS TÁCTICOS (TEXTO OUTLINE / STROKE)
+   ============================================================ */
+.text-stroke {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.25);
+  color: transparent;
+}
+
+.text-stroke-hover:hover {
+  -webkit-text-stroke: 1px rgba(230, 251, 4, 0.9);
+  color: #e6fb04;
+}
+
+.font-syne, .font-montserrat, .font-mono-code, .font-heading {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* ============================================================
+   3D FLIP PANEL MATRIX (ESTILO HERO DE JUNNI)
+   ============================================================ */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* ============================================================
+   SCROLLBAR MINIMALISTA ESTILO CREATIVO
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080809;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #252830;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e6fb04;
+}
+
+/* ============================================================
+   MARQUESINA INFINITA
+   ============================================================ */
+@keyframes marquee-left {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-left {
+  animation: marquee-left 28s linear infinite;
+}
+
+.animate-marquee-right {
+  animation: marquee-right 28s linear infinite;
+}
+
+.animate-marquee-fast {
+  animation: marquee-left 14s linear infinite;
+}
