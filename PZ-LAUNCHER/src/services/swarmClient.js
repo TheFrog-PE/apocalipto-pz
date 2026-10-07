@@ -402,7 +402,7 @@ export async function pollApprovalStatus(nodeId) {
  * Usa argumentos de PZ (-connect HOST -port PORT) para saltar el menú principal
  * y conectar directo al servidor sin intervención del jugador.
  */
-export async function launchProjectZomboid(nodeId, faction, username) {
+export async function launchProjectZomboid(nodeId, faction, username, perfMode = true) {
   try {
     const bridgeUrl = getSwarmBridgeUrl();
     const isLocal = bridgeUrl.includes('localhost') || bridgeUrl.includes('127.0.0.1');
@@ -450,7 +450,8 @@ export async function launchProjectZomboid(nodeId, faction, username) {
             username: playerName, 
             password: '12345',
             targetHost, 
-            targetPort 
+            targetPort,
+            perfMode: Boolean(perfMode)
           }),
           signal: AbortSignal.timeout(5000)
         });

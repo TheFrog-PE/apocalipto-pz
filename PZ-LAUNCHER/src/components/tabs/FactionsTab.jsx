@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, Users, Lock, CheckCircle2, Play, User } from 'lucide-react';
+import { Download, Users, Lock, CheckCircle2, Play, User, Zap } from 'lucide-react';
 
 export default function FactionsTab({ 
   factions, 
@@ -12,7 +12,9 @@ export default function FactionsTab({
   onResetFaction, 
   onLaunchGame,
   updateInfo,
-  onUpdateLauncher
+  onUpdateLauncher,
+  perfMode = true,
+  onTogglePerfMode
 }) {
   const currentFaction = factions.find(f => f.id === (approvedFaction || selectedFaction)) || factions[0];
 
@@ -234,11 +236,41 @@ export default function FactionsTab({
         )}
       </div>
 
-      {/* Indicador de Rendimiento Táctico */}
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-zinc-400 font-mono bg-black/40 px-3.5 py-1.5 rounded-full border border-zinc-800/80">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-emerald-400 font-bold">PERFIL LIGERO:</span>
-        <span>Items 2D • Sangre OFF • Niebla fluida (Modificable en partida)</span>
+      {/* Botón / Switch Interactivo: Modo Rendimiento */}
+      <div className="mt-4 flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onTogglePerfMode}
+          className={`group flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all cursor-pointer font-mono text-xs select-none shadow-md ${
+            perfMode
+              ? 'bg-emerald-950/70 border-emerald-500/80 hover:border-emerald-400 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.99]'
+              : 'bg-zinc-900/90 border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 hover:scale-[1.02] active:scale-[0.99]'
+          }`}
+          title="Haz clic para activar o desactivar la optimización gráfica automática de Project Zomboid"
+        >
+          <div className="flex items-center gap-2 font-bold tracking-wider">
+            <Zap className={`w-4 h-4 ${perfMode ? 'text-[#e6fb04] fill-[#e6fb04] animate-pulse' : 'text-zinc-500'}`} />
+            <span>MODO RENDIMIENTO:</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold tracking-wider ${
+              perfMode ? 'bg-emerald-500 text-black shadow-sm' : 'bg-zinc-800 text-zinc-400'
+            }`}>
+              {perfMode ? 'ACTIVADO' : 'DESACTIVADO'}
+            </span>
+          </div>
+
+          {/* Switch deslizable tipo Pill */}
+          <div className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 ease-in-out flex items-center ${
+            perfMode ? 'bg-emerald-500 justify-end' : 'bg-zinc-700 justify-start'
+          }`}>
+            <span className="w-4 h-4 rounded-full bg-black shadow-md transform transition-transform" />
+          </div>
+        </button>
+
+        <span className="text-[10px] text-zinc-400 font-mono tracking-tight">
+          {perfMode
+            ? '⚡ Sangre OFF • Items en suelo 2D • Niebla fluida (Máximo FPS)'
+            : 'Estándar PZ • Objetos 3D y sangre original (PC Alta Gama)'}
+        </span>
       </div>
     </motion.div>
   );

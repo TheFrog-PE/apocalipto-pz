@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import './App.css';
 
@@ -55,6 +55,31 @@ export default function App() {
   const handleSurvivorNameChange = (val) => {
     setSurvivorName(val);
     try { localStorage.setItem('pz_survivor_name', val); } catch {}
+  };
+
+  // Estado de Modo Rendimiento Gráfico (Items 2D, Sangre OFF, Niebla Ligera)
+  const [perfMode, setPerfMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pz_perf_mode');
+      return saved !== null ? saved === 'true' : true; // Por defecto ACTIVADO para cuidar la PC
+    } catch {
+      return true;
+    }
+  });
+
+  const handleTogglePerfMode = () => {
+    setPerfMode(prev => {
+      const next = !prev;
+      try { localStorage.setItem('pz_perf_mode', String(next)); } catch {}
+      handleShowToast({
+        title: next ? 'MODO RENDIMIENTO ACTIVADO' : 'MODO RENDIMIENTO DESACTIVADO',
+        desc: next 
+          ? 'Project Zomboid se ejecutará optimizado (Items 2D, sangre OFF, niebla fluida).'
+          : 'Project Zomboid se ejecutará con gráficos estándar/originales.',
+        type: next ? 'success' : 'info'
+      });
+      return next;
+    });
   };
 
   // Estado del Motor de Failover Alfa — indica si este nodo está emitiendo heartbeats P2P
@@ -239,7 +264,7 @@ export default function App() {
         desc: `Conectando directo al servidor como ${finalPlayerName}...`,
         type: 'success'
       });
-      const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName);
+      const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
       if (res.success) {
         // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
         // Justo después de que el juego arranca, el Bridge inicia el emitter de
@@ -348,6 +373,8 @@ export default function App() {
               onLaunchGame={handleLaunchGame}
               updateInfo={updateInfo}
               onUpdateLauncher={handleUpdateLauncher}
+              perfMode={perfMode}
+              onTogglePerfMode={handleTogglePerfMode}
             />
           )}
           {activeTab === 'publicaciones' && (
@@ -368,6 +395,8 @@ export default function App() {
         selectedFactionData={selectedFactionData} 
         survivorName={survivorName}
         onSurvivorNameChange={handleSurvivorNameChange}
+        perfMode={perfMode}
+        onTogglePerfMode={handleTogglePerfMode}
         onApproved={(fid) => {
           setApprovedFaction(fid);
           if (fid) {

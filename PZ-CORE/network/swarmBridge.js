@@ -1157,8 +1157,21 @@ export class SwarmBridgeServer {
           // Preparar ticket de conexión automática para que PZ entre directo a crear personaje
           const zomboidUserDir = path.join(os.homedir(), 'Zomboid');
           if (fs.existsSync(zomboidUserDir)) {
-            // 0. Optimizar configuración de gráficos y rendimiento (Items 2D, Sangre 0, Niebla 0)
-            this._optimizeClientGraphics(zomboidUserDir);
+            // 0. Modo de Rendimiento Gráfico según preferencia del jugador
+            const enablePerfMode = body.perfMode !== false;
+            if (enablePerfMode) {
+              this._optimizeClientGraphics(zomboidUserDir);
+            } else {
+              // Si el jugador lo desactivó y existe un backup previo, restaurar para alta gama
+              try {
+                const backupPath = path.join(zomboidUserDir, 'options.ini.bak');
+                const optionsPath = path.join(zomboidUserDir, 'options.ini');
+                if (fs.existsSync(backupPath)) {
+                  fs.copyFileSync(backupPath, optionsPath);
+                  console.log('[PERF_OPT] Modo Rendimiento DESACTIVADO por el jugador: opciones estándar restauradas.');
+                }
+              } catch {}
+            }
 
             const targetIp = '127.0.0.1'; // Siempre conecta a loopback (sea directo o proxy)
             const userPassword = body.password || '12345';

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, X, XCircle, CheckCircle2, Lock, ShieldAlert, Server, Play, AlertTriangle, User } from 'lucide-react';
+import { Terminal, X, XCircle, CheckCircle2, Lock, ShieldAlert, Server, Play, AlertTriangle, User, Zap } from 'lucide-react';
 import { verifyOrRegisterSwarmAccess, pollApprovalStatus, resetLocalSwarmIdentity, resetSwarmCharacter, launchProjectZomboid, getOrCreateLocalIdentity, checkModSync } from '../../services/swarmClient';
 
-export default function LaunchModal({ isOpen, onClose, selectedFactionData, onApproved, survivorName, onSurvivorNameChange }) {
+export default function LaunchModal({ isOpen, onClose, selectedFactionData, onApproved, survivorName, onSurvivorNameChange, perfMode = true, onTogglePerfMode }) {
   const [step, setStep] = useState(0);
   const [accessState, setAccessState] = useState(null); // { status: 'APPROVED' | 'PENDING' | 'REJECTED', isPermanent: bool }
   const [nodeId, setNodeId] = useState('');
@@ -300,14 +300,32 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
           )}
 
           {/* Actions */}
-          {/* Badge de Optimización Gráfica para PC */}
-          <div className="mb-3.5 px-3 py-2 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between text-[10px] text-zinc-300">
+          {/* Switch de Optimización Gráfica para PC */}
+          <div 
+            onClick={onTogglePerfMode}
+            className={`mb-3.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-[10px] select-none ${
+              perfMode
+                ? 'bg-emerald-950/60 border-emerald-500/70 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                : 'bg-zinc-900/80 border-zinc-700 text-zinc-400'
+            }`}
+            title="Haz clic para alternar la optimización gráfica"
+          >
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-bold text-emerald-400 font-mono">RENDIMIENTO ULTRA OPTIMIZADO:</span>
-              <span className="text-zinc-400">Items 2D • Sangre OFF • Niebla ligera</span>
+              <Zap className={`w-3.5 h-3.5 ${perfMode ? 'text-[#e6fb04] fill-[#e6fb04]' : 'text-zinc-500'}`} />
+              <span className="font-bold font-mono">MODO RENDIMIENTO:</span>
+              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${
+                perfMode ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-400'
+              }`}>
+                {perfMode ? 'ACTIVADO' : 'DESACTIVADO'}
+              </span>
+              <span className="text-zinc-400 hidden sm:inline">• {perfMode ? 'Items 2D / Sangre OFF' : 'Gráficos estándar'}</span>
             </div>
-            <span className="text-[9px] text-zinc-500 italic hidden sm:inline">Modificable en Opciones de PZ</span>
+            {/* Switch pill */}
+            <div className={`w-8 h-4 rounded-full p-0.5 transition-colors flex items-center ${
+              perfMode ? 'bg-emerald-500 justify-end' : 'bg-zinc-700 justify-start'
+            }`}>
+              <span className="w-3 h-3 rounded-full bg-black shadow-sm" />
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -334,7 +352,7 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
                   ? survivorName.trim()
                   : (selectedFactionData?.tag ? `Superviviente_${selectedFactionData.tag}` : 'Superviviente');
 
-                const res = await launchProjectZomboid(activeNodeId, selectedFactionData?.tag, finalPlayerName);
+                const res = await launchProjectZomboid(activeNodeId, selectedFactionData?.tag, finalPlayerName, perfMode);
                 if (res.success) {
                   setLaunchMessage(`✓ Conectando como ${finalPlayerName}... Revisa la barra de tareas.`);
                   setTimeout(() => {
