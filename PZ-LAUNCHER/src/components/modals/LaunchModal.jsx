@@ -300,6 +300,16 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
           )}
 
           {/* Actions */}
+          {/* Badge de Optimización Gráfica para PC */}
+          <div className="mb-3.5 px-3 py-2 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between text-[10px] text-zinc-300">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold text-emerald-400 font-mono">RENDIMIENTO ULTRA OPTIMIZADO:</span>
+              <span className="text-zinc-400">Items 2D • Sangre OFF • Niebla ligera</span>
+            </div>
+            <span className="text-[9px] text-zinc-500 italic hidden sm:inline">Modificable en Opciones de PZ</span>
+          </div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={async () => {

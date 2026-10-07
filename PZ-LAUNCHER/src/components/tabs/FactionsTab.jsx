@@ -233,6 +233,13 @@ export default function FactionsTab({
           </button>
         )}
       </div>
+
+      {/* Indicador de Rendimiento Táctico */}
+      <div className="mt-3 flex items-center gap-2 text-[10px] text-zinc-400 font-mono bg-black/40 px-3.5 py-1.5 rounded-full border border-zinc-800/80">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-emerald-400 font-bold">PERFIL LIGERO:</span>
+        <span>Items 2D • Sangre OFF • Niebla fluida (Modificable en partida)</span>
+      </div>
     </motion.div>
   );
 }

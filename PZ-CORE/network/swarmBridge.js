@@ -1157,6 +1157,9 @@ export class SwarmBridgeServer {
           // Preparar ticket de conexión automática para que PZ entre directo a crear personaje
           const zomboidUserDir = path.join(os.homedir(), 'Zomboid');
           if (fs.existsSync(zomboidUserDir)) {
+            // 0. Optimizar configuración de gráficos y rendimiento (Items 2D, Sangre 0, Niebla 0)
+            this._optimizeClientGraphics(zomboidUserDir);
+
             const targetIp = '127.0.0.1'; // Siempre conecta a loopback (sea directo o proxy)
             const userPassword = body.password || '12345';
             const chosenFaction = (faction || 'MOK').toUpperCase();
@@ -1609,4 +1612,72 @@ export class SwarmBridgeServer {
       }
     });
   }
+
+  /**
+   * Optimiza options.ini del cliente Project Zomboid para PC de bajos/medianos recursos:
+   * Desactiva calcomanías de sangre, convierte items 3D del suelo a 2D livianos,
+   * reduce cálculos de niebla y charcos.
+   */
+  _optimizeClientGraphics(zomboidUserDir) {
+    try {
+      const optionsPath = path.join(zomboidUserDir, 'options.ini');
+      if (!fs.existsSync(optionsPath)) return;
+
+      const content = fs.readFileSync(optionsPath, 'utf8');
+      const lines = content.split(/\r?\n/);
+      const optMap = new Map();
+
+      for (const line of lines) {
+        const eqIdx = line.indexOf('=');
+        if (eqIdx > 0) {
+          const k = line.substring(0, eqIdx).trim();
+          const v = line.substring(eqIdx + 1).trim();
+          optMap.set(k, v);
+        }
+      }
+
+      // Perfil de rendimiento balanceado:
+      const tweaks = {
+        '3DGroundItem': 'false',            // Objetos en el piso en 2D (ahorro enorme de polígonos/VRAM)
+        'bloodDecals': '0',                 // 0 = Sin calcomanías de sangre que ahogan los FPS
+        'corpseShadows': 'false',           // Sin sombras en cadáveres
+        'puddles': '0',                     // Sin reflejos complejos en charcos
+        'perfPuddles': '0',                 // Shader ultraligero de charcos
+        'perfSkybox': '0',                  // Cielo optimizado
+        'fogQuality': '0',                  // Niebla ligera (0 = bajo costo)
+        'renderPrecipitation': '1',         // Lluvia liviana (evita tirones en tormentas)
+        'renderPrecipIndoors': 'false',     // No calcular lluvia bajo techo
+        'simpleWeaponTextures': 'true',     // Texturas simplificadas para armas
+        'bPerfReflections': 'false',        // Reflejos desactivados
+        'water': '0',                       // Agua plana y liviana
+        'maxActiveRagdolls': '3'            // Limitar físicas simultáneas de cadáveres cayendo
+      };
+
+      let changed = false;
+      for (const [k, v] of Object.entries(tweaks)) {
+        if (optMap.get(k) !== v) {
+          optMap.set(k, v);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        // Crear backup seguro de las opciones originales si no existe
+        const backupPath = path.join(zomboidUserDir, 'options.ini.bak');
+        if (!fs.existsSync(backupPath)) {
+          fs.writeFileSync(backupPath, content, 'utf8');
+        }
+
+        const newLines = [];
+        for (const [k, v] of optMap.entries()) {
+          newLines.push(`${k}=${v}`);
+        }
+        fs.writeFileSync(optionsPath, newLines.join('\r\n'), 'utf8');
+        console.log('[PERF_OPT] options.ini optimizado: Sangre OFF, Items 2D, Niebla 0, Agua 0.');
+      }
+    } catch (err) {
+      console.warn('[PERF_OPT] Error optimizando options.ini:', err.message);
+    }
+  }
 }
+
