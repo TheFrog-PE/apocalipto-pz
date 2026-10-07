@@ -1,10 +1,14 @@
 {
-  "gatewayUrl": "https://bands-vermont-yorkshire-acquisitions.trycloudflare.com",
+  "gatewayUrl": "https://psychological-cables-domestic-identifying.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "updatedAt": "2026-10-06T23:45:00Z"
+  "latestVersion": "1.0.1",
+  "minRequiredVersion": "1.0.1",
+  "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
+  "changelog": "Lanzamiento directo a Creación de Personaje, conexión Steam nativa e ícono oficial.",
+  "updatedAt": "2026-10-07T15:05:00Z"
 }
