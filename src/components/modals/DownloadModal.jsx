@@ -80,86 +80,32 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
               </div>
             </div>
 
-            {/* Opciones de Acceso */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Opción 1: Abrir Launcher (Entorno Runtime de Escritorio) */}
-              <div className="bg-[#12151e] border border-zinc-800 hover:border-[#e6fb04]/70 rounded-2xl p-5 flex flex-col justify-between transition-all group">
-                <div className="space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#e6fb04]/10 text-[#e6fb04] flex items-center justify-center mb-3">
-                    <Monitor className="w-5 h-5" />
+            {/* Descarga Única: Instalador Oficial Windows (.EXE) */}
+            <div className="bg-[#12151e] border border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <Download className="w-6 h-6" />
                   </div>
-                  <h4 className="font-bold text-white text-sm font-syne uppercase">1. INICIAR LAUNCHER</h4>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                    Ejecuta la interfaz del Launcher en el entorno local con autoconfiguración del Enjambre P2P.
+                  <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 rounded font-mono font-bold tracking-wider">
+                    APP NATIVA DE ESCRITORIO (.EXE)
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-base font-syne uppercase">INSTALADOR OFICIAL PARA WINDOWS</h4>
+                  <p className="text-xs text-zinc-400 font-sans leading-relaxed mt-1">
+                    Instalador nativo con soporte completo de Enjambre P2P, enlace criptográfico directo con Steam y aceleración de red sin intermediarios web.
                   </p>
                 </div>
-                <button
-                  onClick={handleOpenLauncher}
-                  className="mt-4 w-full py-3 bg-[#e6fb04] hover:bg-white text-black font-extrabold uppercase rounded-xl transition-all shadow-[0_0_20px_rgba(230,251,4,0.3)] flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                >
-                  <ExternalLink className="w-4 h-4 stroke-[2.5]" />
-                  <span>EJECUTAR LAUNCHER</span>
-                </button>
               </div>
-
-              {/* Opción 2: Descargar Instalador Oficial Windows (.EXE) */}
-              <div className="bg-[#12151e] border border-zinc-800 hover:border-emerald-500/70 rounded-2xl p-5 flex flex-col justify-between transition-all group">
-                <div className="space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-white text-sm font-syne uppercase">2. APP DE ESCRITORIO</h4>
-                    <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-bold">.EXE NATIVO</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                    Instalador oficial para Windows 10/11. Aplicación nativa de escritorio con motor de Enjambre P2P y aceleración de red.
-                  </p>
-                </div>
-                <a
-                  href="/downloads/ApocaliptoPZ-Setup.exe"
-                  download="ApocaliptoPZ-Setup.exe"
-                  className="mt-4 w-full py-3 bg-zinc-800 hover:bg-emerald-500 text-zinc-200 hover:text-black font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                >
-                  <Download className="w-4 h-4 stroke-[2.5]" />
-                  <span>DESCARGAR .EXE (WINDOWS)</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Enlace Directo Copiable */}
-            <div className="bg-black/60 border border-zinc-800/80 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5 text-[#e6fb04]" />
-                  ENLACE DE INVITACIÓN AL NODO (COMPARTIR CON OTROS JUGADORES)
-                </span>
-                <span className="text-[10px] text-emerald-400 font-bold">1-CLIC AUTO-CONFIG</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={inviteUrl}
-                  className="flex-1 bg-[#090b10] border border-zinc-800 rounded-xl px-3 py-2 text-[11px] text-zinc-300 font-mono focus:outline-none select-all"
-                />
-                <button
-                  onClick={copyInviteLink}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer text-[11px] font-bold"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>COPIADO</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>COPIAR</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <a
+                href="/downloads/ApocaliptoPZ-Setup.exe"
+                download="ApocaliptoPZ-Setup.exe"
+                className="mt-6 w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2 cursor-pointer font-syne text-xs tracking-wider"
+              >
+                <Download className="w-5 h-5 stroke-[2.5]" />
+                <span>DESCARGAR APOCALIPTO PZ (WINDOWS .EXE)</span>
+              </a>
             </div>
 
             {/* Garantías Criptográficas y de Seguridad */}
