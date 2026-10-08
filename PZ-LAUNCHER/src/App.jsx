@@ -9,7 +9,9 @@ import NewsTab from './components/tabs/NewsTab';
 import ContactTab from './components/tabs/ContactTab';
 import RulesModal from './components/modals/RulesModal';
 import LaunchModal from './components/modals/LaunchModal';
+import UpdateModal from './components/modals/UpdateModal';
 import Toast from './components/ui/Toast';
+import { checkLauncherUpdate } from './version';
 
 import { FACTIONS } from './data/factionsData';
 import factionsBg from './assets/apocalipto-pz-facciones.webp';
@@ -85,30 +87,34 @@ export default function App() {
   // Estado del Motor de Failover Alfa — indica si este nodo está emitiendo heartbeats P2P
   const [alfaStatus, setAlfaStatus] = useState({ alfaEngineActive: false, alfaNodeId: null });
 
-  // Estado de actualización obligatoria del Launcher
+  // Estado de actualización del Launcher (semver check automático con GitHub)
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     const checkUpdate = async () => {
       try {
-        const bridgeUrl = getSwarmBridgeUrl();
-        const res = await fetch(`${bridgeUrl}/api/swarm/launcher-version`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.updateRequired) {
-            setUpdateInfo(data);
+        const info = await checkLauncherUpdate();
+        if (info && (info.updateRequired || info.updateAvailable)) {
+          setUpdateInfo(info);
+          if (info.updateRequired) {
+            setShowUpdateModal(true);
           }
         }
       } catch {}
     };
     checkUpdate();
-    const interval = setInterval(checkUpdate, 20000);
+    const interval = setInterval(checkUpdate, 25000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateLauncher = () => {
-    if (updateInfo?.downloadUrl) {
-      window.open(updateInfo.downloadUrl, '_blank');
+  const handleUpdateLauncher = async () => {
+    const targetUrl = updateInfo?.downloadUrl || 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
+    try {
+      const { open } = await import('@tauri-apps/api/shell');
+      await open(targetUrl);
+    } catch {
+      window.open(targetUrl, '_blank');
     }
   };
 
@@ -389,6 +395,7 @@ export default function App() {
       <Footer />
 
       <RulesModal  isOpen={showRules}       onClose={() => setShowRules(false)} />
+      <UpdateModal isOpen={showUpdateModal} updateInfo={updateInfo} onClose={() => setShowUpdateModal(false)} />
       <LaunchModal 
         isOpen={showLaunchModal} 
         onClose={() => setShowLaunchModal(false)} 

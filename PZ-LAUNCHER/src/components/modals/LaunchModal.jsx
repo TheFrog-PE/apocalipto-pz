@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, X, XCircle, CheckCircle2, Lock, ShieldAlert, Server, Play, AlertTriangle, User, Zap } from 'lucide-react';
-import { verifyOrRegisterSwarmAccess, pollApprovalStatus, resetLocalSwarmIdentity, resetSwarmCharacter, launchProjectZomboid, getOrCreateLocalIdentity, checkModSync } from '../../services/swarmClient';
+import { verifyOrRegisterSwarmAccess, pollApprovalStatus, resetLocalSwarmIdentity, resetSwarmCharacter, launchProjectZomboid, getOrCreateLocalIdentity, checkModSync, getSwarmBridgeUrl } from '../../services/swarmClient';
 
 export default function LaunchModal({ isOpen, onClose, selectedFactionData, onApproved, survivorName, onSurvivorNameChange, perfMode = true, onTogglePerfMode }) {
   const [step, setStep] = useState(0);
@@ -254,21 +254,46 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
           )}
 
           {/* Server details si ya está aprobado */}
-          {isReadyToPlay && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3.5 bg-emerald-950/30 border border-emerald-500/50 rounded-xl text-[11px] text-emerald-300 shadow-sm"
-            >
-              <div className="flex items-center gap-2 mb-1 font-bold">
-                <Server className="w-3.5 h-3.5 text-emerald-400" />
-                <span>ENLACE P2P SEGURO: 127.0.0.1:16261 (LOCAL LOOPBACK)</span>
-              </div>
-              <div className="text-zinc-400 text-[10px]">
-                Save-Chain: BLOQUE #1 SYNC • Criptografía: ED25519 • Permiso Permanente: ACTIVO
-              </div>
-            </motion.div>
-          )}
+          {isReadyToPlay && (() => {
+            const currentBridgeUrl = getSwarmBridgeUrl();
+            const isRemoteNode = !currentBridgeUrl.includes('localhost') && !currentBridgeUrl.includes('127.0.0.1');
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-5 p-3.5 bg-emerald-950/30 border border-emerald-500/50 rounded-xl text-[11px] text-emerald-300 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-1 font-bold">
+                  <div className="flex items-center gap-2">
+                    <Server className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>
+                      {isRemoteNode
+                        ? 'SERVIDOR: rails-switching.tun.ply.gg:63854'
+                        : 'ENLACE LOCAL: 127.0.0.1:16261 (ANFITRIÓN)'}
+                    </span>
+                  </div>
+                  {isRemoteNode && (
+                    <button
+                      onClick={() => {
+                        try {
+                          navigator.clipboard.writeText('rails-switching.tun.ply.gg:63854');
+                          setLaunchMessage('✓ IP copiada: rails-switching.tun.ply.gg:63854');
+                        } catch {}
+                      }}
+                      className="text-[9px] px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 rounded border border-emerald-500/40 cursor-pointer"
+                    >
+                      COPIAR IP
+                    </button>
+                  )}
+                </div>
+                <div className="text-zinc-400 text-[10px]">
+                  {isRemoteNode
+                    ? 'Túnel P2P Activo • Puerto: 63854 • Contraseña: 12345 • Permiso: ACTIVO'
+                    : 'Save-Chain: BLOQUE #1 SYNC • Criptografía: ED25519 • Permiso Permanente: ACTIVO'}
+                </div>
+              </motion.div>
+            );
+          })()}
 
           {/* Mensaje de Lanzamiento / Estado del Proxy */}
           {launchMessage && (
@@ -354,7 +379,14 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
 
                 const res = await launchProjectZomboid(activeNodeId, selectedFactionData?.tag, finalPlayerName, perfMode);
                 if (res.success) {
-                  setLaunchMessage(`✓ Conectando como ${finalPlayerName}... Revisa la barra de tareas.`);
+                  if (res.isRemote) {
+                    try {
+                      navigator.clipboard.writeText(`${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63854}`);
+                    } catch {}
+                    setLaunchMessage(`✓ Steam iniciado. IP copiada (${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63854})`);
+                  } else {
+                    setLaunchMessage(`✓ Conectando como ${finalPlayerName}... Revisa la barra de tareas.`);
+                  }
                   setTimeout(() => {
                     setIsLaunching(false);
                     onClose();

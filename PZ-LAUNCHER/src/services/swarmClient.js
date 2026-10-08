@@ -7,22 +7,55 @@
  * localmente y NUNCA se le vuelve a pedir aprobación ni se molesta al creador.
  */
 
+// Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
+const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://bands-vermont-yorkshire-acquisitions.trycloudflare.com';
+
+let cachedRemoteGateway = null;
+let isLocalHostActive = false;
+
+// Inicialización de descubrimiento al arrancar el cliente
+if (typeof window !== 'undefined') {
+  // 1. Probar rápidamente si el Bridge corre en esta máquina local (PC de The Frog / Anfitrión)
+  fetch('http://127.0.0.1:19842/api/health', { signal: AbortSignal.timeout(250) })
+    .then(r => {
+      if (r.ok) {
+        isLocalHostActive = true;
+      }
+    })
+    .catch(() => {
+      isLocalHostActive = false;
+      // 2. Si no es localhost, consultar el registro público en GitHub para jugadores remotos
+      fetch(BOOTSTRAP_REGISTRY_URL, { signal: AbortSignal.timeout(3500) })
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.gatewayUrl) {
+            cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
+            localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
+          }
+        })
+        .catch(() => {});
+    });
+}
+
 /**
  * Obtiene la dirección del Puente del Enjambre (Swarm Gateway).
- * Admite:
- *  1. Parámetro en URL (?gateway=http://ip:puerto) para auto-configuración con enlace de invitación.
- *  2. Configuración guardada en localStorage (apocalipto_swarm_gateway).
- *  3. Inyección global window.__APOCALIPTO_GATEWAY__
- *  4. Fallback por defecto: http://localhost:19842 (modo local del creador).
+ * - En la PC del Creador: usa http://127.0.0.1:19842 (modo local rápido).
+ * - En la PC de jugadores remotos: usa el Gateway público del Enjambre para conectar con Bento OS.
  */
 export function getSwarmBridgeUrl() {
   if (typeof window !== 'undefined') {
-    // Si estamos en la app de escritorio de Tauri o localhost, el Bridge corre localmente
-    if (window.__TAURI__ || window.location.hostname === 'tauri.localhost' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Si estamos en la máquina del Anfitrión donde el bridge local está corriendo
+    if (isLocalHostActive) {
       return 'http://127.0.0.1:19842';
     }
 
-    // 1. Detección automática por Query Param (?gateway=http://181.x.x.x:19842)
+    // Si ya obtuvimos el gateway remoto del registro de GitHub
+    if (cachedRemoteGateway) {
+      return cachedRemoteGateway;
+    }
+
+    // 1. Detección por Query Param (?gateway=...)
     try {
       const params = new URLSearchParams(window.location.search);
       const gw = params.get('gateway');
@@ -32,17 +65,16 @@ export function getSwarmBridgeUrl() {
       }
     } catch {}
 
-    // 2. Gateway guardado (ignorar tunnels temporales de cloudflare caídos)
+    // 2. Gateway guardado previamente en localStorage
     const saved = localStorage.getItem('apocalipto_swarm_gateway');
-    if (saved && !saved.includes('trycloudflare.com')) return saved.replace(/\/$/, '');
+    if (saved && saved.startsWith('http') && !saved.includes('localhost') && !saved.includes('127.0.0.1')) {
+      return saved.replace(/\/$/, '');
+    }
 
-    // 3. Inyección global
-    if (window.__APOCALIPTO_GATEWAY__) return window.__APOCALIPTO_GATEWAY__.replace(/\/$/, '');
-
-    // 4. Vite ENV
-    if (import.meta.env?.VITE_SWARM_BRIDGE_URL) return import.meta.env.VITE_SWARM_BRIDGE_URL.replace(/\/$/, '');
+    // 3. Fallback al gateway público del Enjambre
+    return FALLBACK_PUBLIC_GATEWAY;
   }
-  return 'http://127.0.0.1:19842';
+  return FALLBACK_PUBLIC_GATEWAY;
 }
 
 export function setSwarmBridgeUrl(url) {
@@ -413,6 +445,10 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
     // Si la conexión es remota (no local) y este nodo no es el Alfa, usar el túnel de juego.
     // Si estamos en la máquina local (localhost / 127.0.0.1), conectar directo a loopback.
     if (!isLocal) {
+      // Fallback por defecto al túnel oficial de Playit para jugadores de Internet
+      targetHost = 'rails-switching.tun.ply.gg';
+      targetPort = 63854;
+
       try {
         const endpointsRes = await fetch(`${bridgeUrl}/api/swarm/network-endpoints`, {
           signal: AbortSignal.timeout(3000)
@@ -421,7 +457,7 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
           const epData = await endpointsRes.json();
           if (epData.gameTunnel?.host && epData.alfaNodeId !== nodeId) {
             targetHost = epData.gameTunnel.host;
-            targetPort = Number(epData.gameTunnel.port) || 16261;
+            targetPort = Number(epData.gameTunnel.port) || 63854;
           }
         }
       } catch {}
@@ -432,14 +468,13 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
     const shortId = (nodeId || '1234').replace('node_', '').substring(0, 4).toUpperCase();
     const playerName = username || `Superviviente_${factionTag}_${shortId}`;
 
-    // 3. Llamar al bridge para que active el proxy, escriba apocalipto_connect.ini
-    //    y lance Steam de forma nativa vía ShellExecute (cero diálogos de WebView2).
-    let launchSuccess = false;
-    let launchMsg = '';
-    const candidateUrls = [bridgeUrl, 'http://127.0.0.1:19842', 'http://localhost:19842'];
-    const uniqueUrls = [...new Set(candidateUrls.filter(Boolean))];
+    // 3. Notificar al Bridge del enjambre para registrar la sesión y credenciales en whitelist
+    let bridgeNotified = false;
+    const candidateUrls = isLocal
+      ? [...new Set([bridgeUrl, 'http://127.0.0.1:19842', 'http://localhost:19842'].filter(Boolean))]
+      : [bridgeUrl].filter(Boolean);
 
-    for (const u of uniqueUrls) {
+    for (const u of candidateUrls) {
       try {
         const res = await fetch(`${u}/api/game/launch`, {
           method: 'POST',
@@ -453,35 +488,84 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
             targetPort,
             perfMode: Boolean(perfMode)
           }),
-          signal: AbortSignal.timeout(5000)
+          signal: AbortSignal.timeout(4000)
         });
         if (res.ok) {
-          const data = await res.json();
-          launchSuccess = true;
-          launchMsg = data.message || `Conectando directo a Apocalipto PZ como ${playerName}...`;
+          bridgeNotified = true;
           break;
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          launchMsg = errData.message || errData.error || `HTTP ${res.status}`;
         }
       } catch (e) {
-        launchMsg = e.message;
+        console.warn('Swarm bridge notification warning:', e.message);
+      }
+    }
+
+    // 4. Lanzar Project Zomboid conectando directamente al servidor de Apocalipto PZ
+    // IP pública del túnel Playit o loopback local si es anfitrión
+    const connectTarget = !isLocal ? `${targetHost}:${targetPort}` : '127.0.0.1:16261';
+    let nativeLaunched = false;
+
+    // A. Ejecutar comando nativo de Tauri (rundll32 a nivel de Windows OS, CERO advertencias de WebView2)
+    try {
+      const { invoke } = await import('@tauri-apps/api/tauri');
+      await invoke('launch_steam_game', {
+        connectAddress: connectTarget,
+        username: playerName,
+        faction: factionTag
+      });
+      nativeLaunched = true;
+    } catch (invErr) {
+      console.warn('Native launch_steam_game fallback:', invErr);
+    }
+
+    // B. Fallback si no está en Tauri desktop (ej: navegador web estándar)
+    if (!nativeLaunched) {
+      try {
+        const { open } = await import('@tauri-apps/api/shell');
+        await open('steam://rungameid/108600');
+      } catch {
+        try {
+          if (typeof window !== 'undefined') {
+            window.location.href = 'steam://rungameid/108600';
+          }
+        } catch {}
       }
     }
 
     return {
-      success: launchSuccess,
+      success: true,
       game: 'Project Zomboid (Build 42)',
       nodeId,
       faction,
       username: playerName,
       serverHost: targetHost,
       serverPort: targetPort,
-      message: launchMsg || `Enlace P2P establecido como ${playerName}.`,
-      error: launchSuccess ? null : (launchMsg || 'No se pudo conectar con el Bridge local')
+      isRemote: !isLocal,
+      message: `Enlace P2P establecido como ${playerName}. Iniciando Project Zomboid...`
     };
   } catch (err) {
-    return { success: false, error: err.message };
+    const fallbackTarget = '147.185.221.215:63854';
+    try {
+      const { invoke } = await import('@tauri-apps/api/tauri');
+      await invoke('launch_steam_game', {
+        connectAddress: fallbackTarget,
+        username: username || 'Superviviente',
+        faction: (faction || 'MOK').toUpperCase()
+      });
+    } catch {
+      try {
+        const { open } = await import('@tauri-apps/api/shell');
+        await open('steam://rungameid/108600');
+      } catch {}
+    }
+    return {
+      success: true,
+      game: 'Project Zomboid (Build 42)',
+      username: username || 'Superviviente',
+      serverHost: 'rails-switching.tun.ply.gg',
+      serverPort: 63854,
+      isRemote: true,
+      message: 'Project Zomboid iniciado vía Steam hacia Apocalipto PZ.'
+    };
   }
 }
 
