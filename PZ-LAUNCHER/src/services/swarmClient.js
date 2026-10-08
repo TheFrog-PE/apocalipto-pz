@@ -9,7 +9,7 @@
 
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
 const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
-export const FALLBACK_PUBLIC_GATEWAY = 'https://bands-vermont-yorkshire-acquisitions.trycloudflare.com';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://converter-deaths-webpage-walnut.trycloudflare.com';
 
 let cachedRemoteGateway = null;
 let isLocalHostActive = false;
@@ -25,8 +25,8 @@ if (typeof window !== 'undefined') {
     })
     .catch(() => {
       isLocalHostActive = false;
-      // 2. Si no es localhost, consultar el registro público en GitHub para jugadores remotos
-      fetch(BOOTSTRAP_REGISTRY_URL, { signal: AbortSignal.timeout(3500) })
+      // 2. Si no es localhost, consultar el registro público en GitHub para jugadores remotos (con cache-buster)
+      fetch(`${BOOTSTRAP_REGISTRY_URL}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) })
         .then(r => r.json())
         .then(data => {
           if (data && data.gatewayUrl) {
@@ -375,19 +375,51 @@ export async function verifyOrRegisterSwarmAccess(faction = 'DOE', lore = '', fa
 
   // 4. Consultar al puente del enjambre
   try {
-    const res = await fetch(`${getSwarmBridgeUrl()}/api/node/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        steamId: identity.steamId,
-        faction,
-        factionId,
-        lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,
-        signedHardwareProof
-      })
-    });
+    let bridgeUrl = getSwarmBridgeUrl();
+    let res = null;
+    try {
+      res = await fetch(`${bridgeUrl}/api/node/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          steamId: identity.steamId,
+          faction,
+          factionId,
+          lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,
+          signedHardwareProof
+        }),
+        signal: AbortSignal.timeout(4000)
+      });
+    } catch {}
 
-    if (!res.ok) {
+    // Si falló el envío con el gateway actual, refrescar desde GitHub y reintentar
+    if (!res || !res.ok) {
+      try {
+        const ghRes = await fetch(`${BOOTSTRAP_REGISTRY_URL}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+        if (ghRes.ok) {
+          const ghData = await ghRes.json();
+          if (ghData?.gatewayUrl) {
+            cachedRemoteGateway = ghData.gatewayUrl.replace(/\/$/, '');
+            try { localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway); } catch {}
+            bridgeUrl = cachedRemoteGateway;
+            res = await fetch(`${bridgeUrl}/api/node/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                steamId: identity.steamId,
+                faction,
+                factionId,
+                lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,
+                signedHardwareProof
+              }),
+              signal: AbortSignal.timeout(4000)
+            });
+          }
+        }
+      } catch {}
+    }
+
+    if (!res || !res.ok) {
       return { status: 'PENDING', identity, message: 'Esperando respuesta del enjambre.' };
     }
 
@@ -414,8 +446,29 @@ export async function verifyOrRegisterSwarmAccess(faction = 'DOE', lore = '', fa
  */
 export async function pollApprovalStatus(nodeId) {
   try {
-    const res = await fetch(`${getSwarmBridgeUrl()}/api/node/status/${nodeId}`);
-    if (!res.ok) return { status: 'PENDING' };
+    let bridgeUrl = getSwarmBridgeUrl();
+    let res = null;
+    try {
+      res = await fetch(`${bridgeUrl}/api/node/status/${nodeId}`, { signal: AbortSignal.timeout(3000) });
+    } catch {}
+
+    if (!res || !res.ok) {
+      // Reintentar refrescando gateway desde GitHub
+      try {
+        const ghRes = await fetch(`${BOOTSTRAP_REGISTRY_URL}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+        if (ghRes.ok) {
+          const ghData = await ghRes.json();
+          if (ghData?.gatewayUrl) {
+            cachedRemoteGateway = ghData.gatewayUrl.replace(/\/$/, '');
+            try { localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway); } catch {}
+            bridgeUrl = cachedRemoteGateway;
+            res = await fetch(`${bridgeUrl}/api/node/status/${nodeId}`, { signal: AbortSignal.timeout(3000) });
+          }
+        }
+      } catch {}
+    }
+
+    if (!res || !res.ok) return { status: 'PENDING' };
     const data = await res.json();
 
     if (data.status === 'APPROVED' && data.ticket) {
