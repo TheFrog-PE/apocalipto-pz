@@ -6,9 +6,9 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.2",
-  "minRequiredVersion": "1.0.2",
+  "latestVersion": "1.0.3",
+  "minRequiredVersion": "1.0.3",
   "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "changelog": "Acceso directo obligatorio a la partida sin menús: inyección SQLite de servidor en Project Zomboid y bypass de protocolo Steam.",
-  "updatedAt": "2026-10-08T05:12:00Z"
+  "changelog": "Lanzamiento directo de ProjectZomboid64.exe en disco, eliminación de bloqueo de red de Steam y favoritos integrados.",
+  "updatedAt": "2026-10-08T20:28:00Z"
 }
