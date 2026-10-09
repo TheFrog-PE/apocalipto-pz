@@ -98,14 +98,26 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
                   </p>
                 </div>
               </div>
-              <a
-                href="/downloads/ApocaliptoPZ-Setup.exe"
-                download="ApocaliptoPZ-Setup.exe"
-                className="mt-6 w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2 cursor-pointer font-syne text-xs tracking-wider"
-              >
-                <Download className="w-5 h-5 stroke-[2.5]" />
-                <span>DESCARGAR APOCALIPTO PZ (WINDOWS .EXE)</span>
-              </a>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <a
+                  href="/downloads/ApocaliptoPZ-Setup.zip"
+                  download="ApocaliptoPZ-Setup.zip"
+                  className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2 cursor-pointer font-syne text-xs tracking-wider"
+                >
+                  <Download className="w-5 h-5 stroke-[2.5]" />
+                  <span>DESCARGAR .ZIP (RECOMENDADO)</span>
+                </a>
+                <a
+                  href="/downloads/ApocaliptoPZ-Setup.exe"
+                  download="ApocaliptoPZ-Setup.exe"
+                  className="py-4 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px] tracking-wider border border-zinc-700"
+                >
+                  <span>.EXE DIRECTO</span>
+                </a>
+              </div>
+              <p className="mt-2 text-[10px] text-zinc-400 text-center">
+                * Recomendado: Descomprime el .ZIP y ejecuta el instalador para evitar bloqueos de Windows 11 Smart App Control.
+              </p>
             </div>
 
             {/* Garantías Criptográficas y de Seguridad */}
