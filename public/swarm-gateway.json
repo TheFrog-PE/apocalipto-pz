@@ -6,9 +6,9 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.3",
-  "minRequiredVersion": "1.0.3",
+  "latestVersion": "1.0.4",
+  "minRequiredVersion": "1.0.4",
   "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "changelog": "Lanzamiento directo de ProjectZomboid64.exe en disco, eliminación de bloqueo de red de Steam y favoritos integrados.",
-  "updatedAt": "2026-10-09T02:19:13.375Z"
+  "changelog": "Auto-join directo: al pulsar Ejecutar Juego entra directo a la pantalla de Creación de Personaje sin pasar por menús.",
+  "updatedAt": "2026-10-09T02:46:00Z"
 }
