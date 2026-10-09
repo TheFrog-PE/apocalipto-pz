@@ -3,6 +3,9 @@
 
 use std::fs;
 use std::path::PathBuf;
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine;
+use sha2::{Digest, Sha256};
 
 #[tauri::command]
 fn launch_steam_game(connect_address: String, username: String, faction: String) -> Result<String, String> {
@@ -419,9 +422,77 @@ fn find_pz_executable() -> Option<PathBuf> {
     None
 }
 
+#[tauri::command]
+fn apply_update(binary_data_base64: String, expected_sha256: String) -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        // 1. Decodificar el binario del instalador recibido
+        let bytes = BASE64
+            .decode(binary_data_base64.trim())
+            .map_err(|e| format!("Error al decodificar binario de actualización: {}", e))?;
+
+        if bytes.is_empty() {
+            return Err("El binario de actualización recibido está vacío".into());
+        }
+
+        // 2. Verificación criptográfica estricta SHA-256 (Anti-Tamper / Anti-Malware)
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        let computed_hash = format!("{:x}", hasher.finalize());
+
+        let target_expected = expected_sha256.trim().to_lowercase();
+        if !target_expected.is_empty() && computed_hash != target_expected {
+            return Err(format!(
+                "Firma de seguridad inválida: el hash SHA-256 calculado ({}) no coincide con el oficial ({})",
+                computed_hash, target_expected
+            ));
+        }
+
+        // 3. Escribir el ejecutable temporal en la carpeta %TEMP% de Windows
+        let temp_dir = std::env::temp_dir();
+        let temp_setup = temp_dir.join("ApocaliptoPZ-Setup-Update.exe");
+        fs::write(&temp_setup, &bytes).map_err(|e| format!("Error al guardar instalador temporal: {}", e))?;
+
+        // 4. Identificar el ejecutable actual para relanzarlo tras la instalación
+        let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+
+        // 5. Lanzar proceso desacoplado de Windows:
+        //    - timeout /t 2 /nobreak: espera 2 segundos para liberar los archivos del launcher actual
+        //    - "temp_setup" /S: instala silenciosamente la nueva versión sobreescribiendo archivos
+        //    - start "" "current_exe": reabre el launcher actualizado automáticamente
+        let cmd_script = format!(
+            "timeout /t 2 /nobreak >nul & \"{}\" /S & start \"\" \"{}\"",
+            temp_setup.display(),
+            current_exe.display()
+        );
+
+        std::process::Command::new("cmd")
+            .args(["/C", &cmd_script])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Error al ejecutar script de actualización: {}", e))?;
+
+        // 6. Cerrar el proceso actual en un hilo de fondo tras confirmar éxito
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_millis(600));
+            std::process::exit(0);
+        });
+
+        Ok("Actualización verificada e iniciada con éxito".into())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Auto-actualización silenciosa solo soportada en Windows".into())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![launch_steam_game])
+        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

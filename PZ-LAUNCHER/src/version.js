@@ -1,4 +1,4 @@
-export const LAUNCHER_VERSION = '1.0.5';
+export const LAUNCHER_VERSION = '1.0.6';
 export const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
 export const DEFAULT_DOWNLOAD_URL = 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
 
@@ -44,6 +44,7 @@ export async function checkLauncherUpdate() {
       updateAvailable: isOutdated,
       updateRequired: isRequired,
       downloadUrl: data.downloadUrl || DEFAULT_DOWNLOAD_URL,
+      sha256: data.sha256 || '',
       changelog: data.changelog || data.notes || 'Actualización obligatoria para sincronizar con la red P2P del Enjambre.'
     };
   } catch (e) {

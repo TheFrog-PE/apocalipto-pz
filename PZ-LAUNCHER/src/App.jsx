@@ -108,14 +108,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateLauncher = async () => {
-    const targetUrl = updateInfo?.downloadUrl || 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
-    try {
-      const { open } = await import('@tauri-apps/api/shell');
-      await open(targetUrl);
-    } catch {
-      window.open(targetUrl, '_blank');
-    }
+  const handleUpdateLauncher = () => {
+    setShowUpdateModal(true);
   };
 
   // Sincronizar conteo de facciones en vivo con el Enjambre (0 si no hay nadie)
