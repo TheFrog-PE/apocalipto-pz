@@ -6,9 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.5",
-  "minRequiredVersion": "1.0.5",
+  "latestVersion": "1.0.6",
+  "minRequiredVersion": "1.0.6",
   "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "changelog": "Fix crítico: pantalla congelada al entrar al juego. Ahora usa el método nativo bootstrapConnectPopup de PZ para auto-conectar sin bloquear la UI.",
-  "updatedAt": "2026-10-09T14:41:00Z"
+  "sha256": "2bdab085493c041f0cf92b3c85761395128635054866bfa44ffc8ec6ba7b52b8",
+  "changelog": "Sistema de auto-actualización silenciosa integrado: descarga de parches en segundo plano con validación de seguridad criptográfica SHA-256 e instalación automática sin abrir el navegador.",
+  "updatedAt": "2026-10-09T15:58:00Z"
 }
