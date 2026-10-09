@@ -325,6 +325,59 @@ end
                     }
                 }
 
+                // Inyectar el hook de auto-relleno de credenciales y conexión directa en ServerConnectPopup.lua
+                let server_connect_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("ServerConnectPopup.lua");
+                if let Ok(popup_content) = fs::read_to_string(&server_connect_path) {
+                    if !popup_content.contains("ApocaliptoServerConnectInjected") {
+                        let popup_hook = r##"
+
+-- [APOCALIPTO PZ] Auto-completado de credenciales y conexión directa
+if not _G.ApocaliptoServerConnectInjected then
+    _G.ApocaliptoServerConnectInjected = true
+    local old_setServer = ServerConnectPopup.setServer
+    ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
+        if old_setServer then old_setServer(self, ip, port, passwordStr) end
+
+        local sUser = (ApocaliptoSession and ApocaliptoSession.user)
+        local sPwd = (ApocaliptoSession and ApocaliptoSession.password) or "12345"
+        if not sUser or sUser == "" then
+            local sReader = getFileReader("apocalipto_session.ini", false)
+            if sReader then
+                while true do
+                    local sLine = sReader:readLine()
+                    if sLine == nil then break end
+                    sLine = string.trim(sLine)
+                    local sSep = string.find(sLine, "=")
+                    if sSep then
+                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
+                        local sv = string.trim(string.sub(sLine, sSep + 1))
+                        if sk == "user" then sUser = sv end
+                        if sk == "password" then sPwd = sv end
+                    end
+                end
+                sReader:close()
+            end
+        end
+
+        if sUser and sUser ~= "" then
+            self.usernameEntry:setText(sUser)
+            self.passwordEntry:setText(sPwd)
+            self.serverPasswordEntry:setText("")
+
+            -- Ocultar ventana emergente e ingresar directamente sin requerir interacción del jugador
+            self:setVisible(false)
+            local localIP = ""
+            local useSteamRelay = false
+            ConnectToServer.instance:connect(self, "Apocalipto PZ", sUser, sPwd, ip, localIP, port, "", useSteamRelay, true, 1)
+        end
+    end
+end
+"##;
+                        let patched_popup = format!("{}{}", popup_content, popup_hook);
+                        let _ = fs::write(&server_connect_path, patched_popup);
+                    }
+                }
+
                 let connect_arg = format!("{}:63854", clean_ip);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)

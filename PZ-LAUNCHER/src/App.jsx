@@ -52,7 +52,19 @@ export default function App() {
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [toast, setToast] = useState(null);
   const [factions, setFactions] = useState(FACTIONS);
-  const [survivorName, setSurvivorName] = useState(() => localStorage.getItem('pz_survivor_name') || '');
+  const [survivorName, setSurvivorName] = useState(() => {
+    const saved = localStorage.getItem('pz_survivor_name');
+    if (saved && saved.trim()) return saved.trim();
+    try {
+      const localId = getOrCreateLocalIdentity();
+      const shortId = (localId?.nodeId || '1234').replace('node_', '').substring(0, 4).toUpperCase();
+      const generated = `Superviviente_${shortId}`;
+      try { localStorage.setItem('pz_survivor_name', generated); } catch {}
+      return generated;
+    } catch {
+      return `Superviviente_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+  });
 
   const handleSurvivorNameChange = (val) => {
     setSurvivorName(val);
