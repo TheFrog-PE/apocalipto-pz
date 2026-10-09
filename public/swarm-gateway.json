@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.7",
-  "minRequiredVersion": "1.0.7",
+  "latestVersion": "1.0.8",
+  "minRequiredVersion": "1.0.8",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "fe9b0815bdb20b693d5dd7353a9d9db8bdca31285926d8a537cb65c0719f66b5",
-  "changelog": "Fix crítico de MapSpawnSelect (reparación automática de sintaxis Lua) + Bypass obligatorio de selección de spawn (auto-asignación por facción en inicio y reaparición al morir) + Auto-conexión nativa directa.",
-  "updatedAt": "2026-10-09T17:55:00Z"
+  "sha256": "9b5c208d98402b7cf07f7a731714143e6b669c6f31c2d8a069b2cf795570bf83",
+  "changelog": "Bypass total de credenciales: auto-completado y auto-conexión invisible en ServerConnectPopup + Identidad criptográfica única persistente por launcher sin ventanas intermedias.",
+  "updatedAt": "2026-10-09T18:51:00Z"
 }
