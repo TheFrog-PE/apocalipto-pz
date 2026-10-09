@@ -273,16 +273,19 @@ export default function App() {
       const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
       if (res.success) {
         // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
-        // Justo después de que el juego arranca, el Bridge inicia el emitter de
-        // heartbeats criptográficos. Los Nodos Sombra ya empezarán a monitorear.
-        const alfaRes = await activateAlfaEngine(localId.nodeId);
-        if (alfaRes.success) {
-          setAlfaStatus({ alfaEngineActive: true, alfaNodeId: localId.nodeId });
-          handleShowToast({
-            title: '🟢 NODO ALFA ACTIVO',
-            desc: 'Motor de Failover P2P iniciado. Heartbeats cada 5s. Los Nodos Sombra están monitoreando.',
-            type: 'success'
-          });
+        // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
+        const currentBridge = getSwarmBridgeUrl();
+        const isLocalHost = currentBridge.includes('localhost') || currentBridge.includes('127.0.0.1');
+        if (isLocalHost) {
+          const alfaRes = await activateAlfaEngine(localId.nodeId);
+          if (alfaRes.success) {
+            setAlfaStatus({ alfaEngineActive: true, alfaNodeId: localId.nodeId });
+            handleShowToast({
+              title: '🟢 NODO ALFA ACTIVO',
+              desc: 'Motor de Failover P2P iniciado. Heartbeats cada 5s.',
+              type: 'success'
+            });
+          }
         }
         // ───────────────────────────────────────────────────────────────────
       } else {

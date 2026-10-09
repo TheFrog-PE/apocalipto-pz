@@ -137,6 +137,176 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
         if let Some(pz_exe) = find_pz_executable() {
             if let Some(pz_dir) = pz_exe.parent() {
+                // Inyectar el hook de salto de menú y conexión directa a creación de personaje en MainScreen.lua
+                let main_screen_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MainScreen.lua");
+                if let Ok(content) = fs::read_to_string(&main_screen_path) {
+                    // Firma del hook viejo (usa ConnectToServer.instance:connect — bug pantalla congelada)
+                    let old_hook_sig = "ConnectToServer.instance:connect(";
+                    // Firma del hook nuevo (usa bootstrapConnectPopup:connect — correcto)
+                    let new_hook_sig = "bootstrapConnectPopup:connect(ip, port, pwd)";
+
+                    let needs_inject = !content.contains("apocalipto_connect.ini");
+                    let needs_upgrade = content.contains("apocalipto_connect.ini")
+                        && content.contains(old_hook_sig)
+                        && !content.contains(new_hook_sig);
+
+                    if needs_inject || needs_upgrade {
+                        let working_content = if needs_upgrade {
+                            // Para upgrade: leer el archivo vanilla limpio y reparchar
+                            // El archivo ya está parchado — necesitamos eliminar el hook viejo primero.
+                            // Encontramos el bloque del hook por sus marcadores y lo eliminamos.
+                            let hook_start = "        -- [APOCALIPTO PZ] TICKET DE SESION";
+                            let hook_end = "        if okTicket and ticketUsed then\n            return\n        end\n";
+                            if let (Some(hs), Some(he)) = (content.find(hook_start), content.find("        if okTicket and ticketUsed then")) {
+                                let end_pos = he + "        if okTicket and ticketUsed then\n            return\n        end\n".len();
+                                format!("{}{}", &content[..hs], &content[end_pos..])
+                            } else {
+                                content.clone()
+                            }
+                        } else {
+                            content.clone()
+                        };
+
+                        let target_anchor = "local argsServer = getServerAddressFromArgs();";
+                        if let Some(pos) = working_content.find(target_anchor) {
+                            let lua_hook = r##"
+        -- [APOCALIPTO PZ] TICKET DE SESION AUTO-JOIN DIRECTO & PREVENCIÓN DE CONGELAMIENTO
+        local okTicket, ticketUsed = pcall(function()
+            local reader = getFileReader("apocalipto_connect.ini", false)
+            if not reader then return false end
+            local params = {}
+            while true do
+                local line = reader:readLine()
+                if line == nil then break end
+                line = string.trim(line)
+                if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+                    local sep = string.find(line, "=")
+                    if sep then
+                        local k = string.trim(string.sub(line, 1, sep - 1))
+                        local v = string.trim(string.sub(line, sep + 1))
+                        params[k] = v
+                    end
+                end
+            end
+            reader:close()
+            _G.ApocaliptoSession = params
+
+            if params.ip and params.port and params.user and string.len(params.user) > 0 then
+                -- Limpiar el ticket (overwrite=true trunca el archivo) para que el próximo inicio de PZ no lo reutilice
+                local writer = getFileWriter("apocalipto_connect.ini", true, false)
+                if writer then writer:close() end
+
+                local ip = params.ip
+                local port = tostring(params.port)
+                local pwd = params.password or "12345"
+
+                if MainScreen.instance.animPopup ~= nil then
+                    MainScreen.instance.animPopup:removeFromUIManager()
+                end
+                MainScreen.instance.bottomPanel:setVisible(false)
+
+                -- bootstrapConnectPopup es el método nativo de PZ para conectar desde la pantalla principal
+                -- Mismo mecanismo que usa getServerAddressFromArgs() en PZ vanilla — garantiza UI correcta
+                MainScreen.instance.bootstrapConnectPopup:connect(ip, port, pwd)
+                return true
+            end
+            return false
+        end)
+        if okTicket and ticketUsed then
+            return
+        end
+"##;
+                            let patched = format!("{}{}{}", &working_content[..pos], lua_hook, &working_content[pos..]);
+                            let _ = fs::write(&main_screen_path, patched);
+                        }
+                    }
+                }
+
+                // Inyectar el hook de bypass de spawn por facción en MapSpawnSelect.lua
+                let map_spawn_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MapSpawnSelect.lua");
+                if let Ok(spawn_content) = fs::read_to_string(&map_spawn_path) {
+                    if !spawn_content.contains("ApocaliptoSession") && !spawn_content.contains("apocalipto_session.ini") {
+                        let target_spawn = "function MapSpawnSelect:hasChoices()";
+                        if let Some(pos) = spawn_content.find(target_spawn) {
+                            let spawn_hook = r##"function MapSpawnSelect:hasChoices()
+	-- [APOCALIPTO PZ] Si hay una facción configurada en la sesión, forzar uso directo de su spawn sin selector manual
+	local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
+	if not targetFaction then
+		local sReader = getFileReader("apocalipto_session.ini", false)
+		if sReader then
+			while true do
+				local sLine = sReader:readLine()
+				if sLine == nil then break end
+				sLine = string.trim(sLine)
+				local sSep = string.find(sLine, "=")
+				if sSep then
+					local sk = string.trim(string.sub(sLine, 1, sSep - 1))
+					local sv = string.trim(string.sub(sLine, sSep + 1))
+					if sk == "faction" then targetFaction = sv break end
+				end
+			end
+			sReader:close()
+		end
+	end
+	if targetFaction and targetFaction ~= "" then
+		return false
+	end
+
+	local regions = self:getSpawnRegions()
+	return regions and #regions > 1
+end
+
+function MapSpawnSelect:useDefaultSpawnRegion()
+	self.selectedRegion = nil
+	local regions = self:getSpawnRegions()
+	if not regions or #regions == 0 then return end
+
+	local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
+	if not targetFaction then
+		local sReader = getFileReader("apocalipto_session.ini", false)
+		if sReader then
+			while true do
+				local sLine = sReader:readLine()
+				if sLine == nil then break end
+				sLine = string.trim(sLine)
+				local sSep = string.find(sLine, "=")
+				if sSep then
+					local sk = string.trim(string.sub(sLine, 1, sSep - 1))
+					local sv = string.trim(string.sub(sLine, sSep + 1))
+					if sk == "faction" then targetFaction = sv break end
+				end
+			end
+			sReader:close()
+		end
+	end
+
+	if targetFaction and targetFaction ~= "" then
+		local fTag = string.upper(targetFaction)
+		for _, r in ipairs(regions) do
+			if string.find(string.upper(r.name), fTag) then
+				self.selectedRegion = r
+				setSpawnRegion(r.name)
+				getCore():setSelectedMap(tostring(r.name))
+				print("[APOCALIPTO PZ] Spawn auto-asignado a territorio de faccion: " .. tostring(r.name))
+				return self.selectedRegion
+			end
+		end
+	end
+
+	self.selectedRegion = regions[1]
+	setSpawnRegion(self.selectedRegion.name)
+	getCore():setSelectedMap(tostring(self.selectedRegion.name))
+	return self.selectedRegion
+end
+
+function __UNUSED_ORIGINAL_hasChoices()
+"##;
+                            let patched = format!("{}{}{}", &spawn_content[..pos], spawn_hook, &spawn_content[pos..]);
+                            let _ = fs::write(&map_spawn_path, patched);
+                        }
+                    }
+                }
+
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
                     .spawn();
