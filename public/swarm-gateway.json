@@ -6,9 +6,9 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.4",
-  "minRequiredVersion": "1.0.4",
+  "latestVersion": "1.0.5",
+  "minRequiredVersion": "1.0.5",
   "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "changelog": "Auto-join directo: al pulsar Ejecutar Juego entra directo a la pantalla de Creación de Personaje sin pasar por menús.",
-  "updatedAt": "2026-10-09T02:46:00Z"
+  "changelog": "Fix crítico: pantalla congelada al entrar al juego. Ahora usa el método nativo bootstrapConnectPopup de PZ para auto-conectar sin bloquear la UI.",
+  "updatedAt": "2026-10-09T14:41:00Z"
 }
