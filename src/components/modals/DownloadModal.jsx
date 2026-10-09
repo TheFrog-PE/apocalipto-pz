@@ -107,7 +107,7 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
                 <span>DESCARGAR APOCALIPTO PZ (.ZIP RECOMENDADO)</span>
               </a>
               <p className="mt-3 text-[10px] text-zinc-400 text-center font-mono">
-                * Descomprime el archivo .ZIP y ejecuta <b>Instalar_Apocalipto.bat</b> (o el instalador) para iniciar directo.
+                * Descomprime el archivo .ZIP y ejecuta <b>Instalar_Apocalipto.exe</b> para iniciar directo.
               </p>
             </div>
 
