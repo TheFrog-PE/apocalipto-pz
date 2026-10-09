@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://converter-deaths-webpage-walnut.trycloudflare.com",
+  "gatewayUrl": "https://passed-wheat-travel-twist.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -10,5 +10,5 @@
   "minRequiredVersion": "1.0.3",
   "downloadUrl": "https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "changelog": "Lanzamiento directo de ProjectZomboid64.exe en disco, eliminación de bloqueo de red de Steam y favoritos integrados.",
-  "updatedAt": "2026-10-08T21:15:00Z"
+  "updatedAt": "2026-10-09T02:19:13.375Z"
 }
