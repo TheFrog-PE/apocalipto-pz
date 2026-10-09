@@ -529,18 +529,21 @@ fn apply_update(binary_data_base64: String, expected_sha256: String) -> Result<S
         // 4. Identificar el ejecutable actual para relanzarlo tras la instalación
         let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
 
-        // 5. Lanzar proceso desacoplado de Windows:
-        //    - timeout /t 2 /nobreak: espera 2 segundos para liberar los archivos del launcher actual
-        //    - "temp_setup" /S: instala silenciosamente la nueva versión sobreescribiendo archivos
-        //    - start "" "current_exe": reabre el launcher actualizado automáticamente
-        let cmd_script = format!(
-            "timeout /t 2 /nobreak >nul & \"{}\" /S & start \"\" \"{}\"",
-            temp_setup.display(),
-            current_exe.display()
+        // 5. Crear script batch desacoplado en %TEMP% para evitar errores de comillas en CMD de Windows:
+        //    - ping 127.0.0.1 -n 3: espera 2 segundos exactos para que el launcher actual termine y libere el binario
+        //    - start /wait "" "temp_setup" /S: instala silenciosamente la nueva versión
+        //    - start "" "current_exe": relanza el launcher actualizado
+        //    - (goto) 2>nul & del "%~f0": auto-elimina el script temporal
+        let bat_path = temp_dir.join("apocalipto_run_update.bat");
+        let bat_script = format!(
+            "@echo off\r\nping 127.0.0.1 -n 3 >nul\r\nstart /wait \"\" \"{}\" /S\r\nstart \"\" \"{}\"\r\n(goto) 2>nul & del \"%~f0\"\r\n",
+            temp_setup.to_string_lossy(),
+            current_exe.to_string_lossy()
         );
+        fs::write(&bat_path, bat_script).map_err(|e| format!("Error al crear script de actualización: {}", e))?;
 
-        std::process::Command::new("cmd")
-            .args(["/C", &cmd_script])
+        std::process::Command::new("cmd.exe")
+            .args(["/C", &bat_path.to_string_lossy()])
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Error al ejecutar script de actualización: {}", e))?;
