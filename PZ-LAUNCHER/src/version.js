@@ -1,4 +1,4 @@
-export const LAUNCHER_VERSION = '1.0.6';
+export const LAUNCHER_VERSION = '1.0.7';
 export const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
 export const DEFAULT_DOWNLOAD_URL = 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
 

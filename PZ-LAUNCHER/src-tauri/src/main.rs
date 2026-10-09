@@ -11,29 +11,29 @@ use sha2::{Digest, Sha256};
 fn launch_steam_game(connect_address: String, username: String, faction: String) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
+        let clean_ip = if connect_address.contains(':') {
+            connect_address.split(':').next().unwrap_or("147.185.221.215")
+        } else {
+            "147.185.221.215"
+        };
+
+        let clean_user = if username.trim().is_empty() {
+            "Superviviente"
+        } else {
+            username.trim()
+        };
+
+        let clean_faction = if faction.trim().is_empty() {
+            "MOK"
+        } else {
+            faction.trim()
+        };
+
         // 1. Inyectar configuración de sesión en %USERPROFILE%/Zomboid del jugador
         if let Some(user_profile) = std::env::var_os("USERPROFILE") {
             let zomboid_dir = PathBuf::from(&user_profile).join("Zomboid");
             let lua_dir = zomboid_dir.join("Lua");
             let _ = fs::create_dir_all(&lua_dir);
-
-            let clean_ip = if connect_address.contains(':') {
-                connect_address.split(':').next().unwrap_or("147.185.221.215")
-            } else {
-                "147.185.221.215"
-            };
-
-            let clean_user = if username.trim().is_empty() {
-                "Superviviente"
-            } else {
-                username.trim()
-            };
-
-            let clean_faction = if faction.trim().is_empty() {
-                "MOK"
-            } else {
-                faction.trim()
-            };
 
             let ini_content = format!(
                 "ip={}\nport=63854\nuser={}\npassword=12345\nfaction={}\nspawnRegion={}\nserverName=Apocalipto PZ\n",
@@ -225,93 +225,110 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                     }
                 }
 
-                // Inyectar el hook de bypass de spawn por facción en MapSpawnSelect.lua
+                // Inyectar y auto-reparar el hook de bypass de spawn por facción en MapSpawnSelect.lua
                 let map_spawn_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MapSpawnSelect.lua");
                 if let Ok(spawn_content) = fs::read_to_string(&map_spawn_path) {
-                    if !spawn_content.contains("ApocaliptoSession") && !spawn_content.contains("apocalipto_session.ini") {
-                        let target_spawn = "function MapSpawnSelect:hasChoices()";
-                        if let Some(pos) = spawn_content.find(target_spawn) {
-                            let spawn_hook = r##"function MapSpawnSelect:hasChoices()
-	-- [APOCALIPTO PZ] Si hay una facción configurada en la sesión, forzar uso directo de su spawn sin selector manual
-	local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
-	if not targetFaction then
-		local sReader = getFileReader("apocalipto_session.ini", false)
-		if sReader then
-			while true do
-				local sLine = sReader:readLine()
-				if sLine == nil then break end
-				sLine = string.trim(sLine)
-				local sSep = string.find(sLine, "=")
-				if sSep then
-					local sk = string.trim(string.sub(sLine, 1, sSep - 1))
-					local sv = string.trim(string.sub(sLine, sSep + 1))
-					if sk == "faction" then targetFaction = sv break end
-				end
-			end
-			sReader:close()
-		end
-	end
-	if targetFaction and targetFaction ~= "" then
-		return false
-	end
+                    // 1. Auto-reparación: neutralizar la línea corrupta que provocaba 'end' expected en clientes
+                    let cleaned_content = spawn_content
+                        .replace("function __UNUSED_ORIGINAL_hasChoices()", "-- [REPAIRED] function __UNUSED_ORIGINAL_hasChoices()")
+                        .replace("function __UNUSED_ORIGINAL_hasChoices", "-- [REPAIRED] function __UNUSED_ORIGINAL_hasChoices");
 
-	local regions = self:getSpawnRegions()
-	return regions and #regions > 1
+                    // 2. Inyectar o actualizar el hook limpio de spawn forzado al final del archivo
+                    let is_already_clean = cleaned_content.contains("ApocaliptoSpawnInjected");
+                    let final_content = if !is_already_clean {
+                        let spawn_hook = r##"
+
+-- [APOCALIPTO PZ] BYPASS DE SPAWN FORZADO POR FACCION
+if not _G.ApocaliptoSpawnInjected then
+    _G.ApocaliptoSpawnInjected = true
+    local old_hasChoices = MapSpawnSelect.hasChoices
+    MapSpawnSelect.hasChoices = function(self)
+        local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
+        if not targetFaction then
+            local sReader = getFileReader("apocalipto_session.ini", false)
+            if sReader then
+                while true do
+                    local sLine = sReader:readLine()
+                    if sLine == nil then break end
+                    sLine = string.trim(sLine)
+                    local sSep = string.find(sLine, "=")
+                    if sSep then
+                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
+                        local sv = string.trim(string.sub(sLine, sSep + 1))
+                        if sk == "faction" then targetFaction = sv break end
+                    end
+                end
+                sReader:close()
+            end
+        end
+        if targetFaction and targetFaction ~= "" then
+            return false
+        end
+        if old_hasChoices then return old_hasChoices(self) end
+        local regions = self:getSpawnRegions()
+        return regions and #regions > 1
+    end
+
+    local old_useDefault = MapSpawnSelect.useDefaultSpawnRegion
+    MapSpawnSelect.useDefaultSpawnRegion = function(self)
+        self.selectedRegion = nil
+        local regions = self:getSpawnRegions()
+        if not regions or #regions == 0 then return end
+
+        local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
+        if not targetFaction then
+            local sReader = getFileReader("apocalipto_session.ini", false)
+            if sReader then
+                while true do
+                    local sLine = sReader:readLine()
+                    if sLine == nil then break end
+                    sLine = string.trim(sLine)
+                    local sSep = string.find(sLine, "=")
+                    if sSep then
+                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
+                        local sv = string.trim(string.sub(sLine, sSep + 1))
+                        if sk == "faction" then targetFaction = sv break end
+                    end
+                end
+                sReader:close()
+            end
+        end
+
+        if targetFaction and targetFaction ~= "" then
+            local fTag = string.upper(targetFaction)
+            for _, r in ipairs(regions) do
+                if string.find(string.upper(r.name), fTag) then
+                    self.selectedRegion = r
+                    setSpawnRegion(r.name)
+                    getCore():setSelectedMap(tostring(r.name))
+                    print("[APOCALIPTO PZ] Spawn auto-asignado a territorio de faccion: " .. tostring(r.name))
+                    return self.selectedRegion
+                end
+            end
+        end
+
+        if old_useDefault then return old_useDefault(self) end
+        self.selectedRegion = regions[1]
+        setSpawnRegion(self.selectedRegion.name)
+        getCore():setSelectedMap(tostring(self.selectedRegion.name))
+        return self.selectedRegion
+    end
 end
-
-function MapSpawnSelect:useDefaultSpawnRegion()
-	self.selectedRegion = nil
-	local regions = self:getSpawnRegions()
-	if not regions or #regions == 0 then return end
-
-	local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
-	if not targetFaction then
-		local sReader = getFileReader("apocalipto_session.ini", false)
-		if sReader then
-			while true do
-				local sLine = sReader:readLine()
-				if sLine == nil then break end
-				sLine = string.trim(sLine)
-				local sSep = string.find(sLine, "=")
-				if sSep then
-					local sk = string.trim(string.sub(sLine, 1, sSep - 1))
-					local sv = string.trim(string.sub(sLine, sSep + 1))
-					if sk == "faction" then targetFaction = sv break end
-				end
-			end
-			sReader:close()
-		end
-	end
-
-	if targetFaction and targetFaction ~= "" then
-		local fTag = string.upper(targetFaction)
-		for _, r in ipairs(regions) do
-			if string.find(string.upper(r.name), fTag) then
-				self.selectedRegion = r
-				setSpawnRegion(r.name)
-				getCore():setSelectedMap(tostring(r.name))
-				print("[APOCALIPTO PZ] Spawn auto-asignado a territorio de faccion: " .. tostring(r.name))
-				return self.selectedRegion
-			end
-		end
-	end
-
-	self.selectedRegion = regions[1]
-	setSpawnRegion(self.selectedRegion.name)
-	getCore():setSelectedMap(tostring(self.selectedRegion.name))
-	return self.selectedRegion
-end
-
-function __UNUSED_ORIGINAL_hasChoices()
 "##;
-                            let patched = format!("{}{}{}", &spawn_content[..pos], spawn_hook, &spawn_content[pos..]);
-                            let _ = fs::write(&map_spawn_path, patched);
-                        }
+                        format!("{}{}", cleaned_content, spawn_hook)
+                    } else {
+                        cleaned_content
+                    };
+
+                    if final_content != spawn_content {
+                        let _ = fs::write(&map_spawn_path, final_content);
                     }
                 }
 
+                let connect_arg = format!("{}:63854", clean_ip);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
+                    .args(["-connect", &connect_arg, "-password", "12345"])
                     .spawn();
 
                 if spawn_res.is_ok() {
@@ -320,10 +337,10 @@ function __UNUSED_ORIGINAL_hasChoices()
             }
         }
 
-        // Fallback: ordenar a Steam ejecutar Project Zomboid Build 42 (App ID 108600)
-        let steam_app_uri = "steam://rungameid/108600";
+        // Fallback: ordenar a Steam ejecutar Project Zomboid Build 42 (App ID 108600) con argumentos de conexión
+        let steam_app_uri = format!("steam://run/108600//-connect%20{}:63854%20-password%2012345", clean_ip);
         std::process::Command::new("rundll32.exe")
-            .args(["url.dll,FileProtocolHandler", steam_app_uri])
+            .args(["url.dll,FileProtocolHandler", &steam_app_uri])
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| e.to_string())?;
