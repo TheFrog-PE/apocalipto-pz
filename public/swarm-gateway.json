@@ -1,15 +1,15 @@
 {
-  "gatewayUrl": "https://passed-wheat-travel-twist.trycloudflare.com",
+  "gatewayUrl": "https://workplace-beast-brown-pick.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.9",
-  "minRequiredVersion": "1.0.9",
+  "latestVersion": "1.1.0",
+  "minRequiredVersion": "1.1.0",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "5270595aff539f96017df19261cc515fb5ddb09e4b0301ea4a30a139945aec64",
-  "changelog": "Fix de ejecución de script de actualización de Windows + Auto-completado de credenciales y conexión directa sin ventanas intermedias.",
-  "updatedAt": "2026-10-09T19:24:00Z"
+  "sha256": "19531abac58f44f89f990913cd7947551212437e956a84ae0c038d1bde3a08f1",
+  "changelog": "Bypass definitivo de login y auto-asignación nativa de Nodo Sombra en segundo plano.",
+  "updatedAt": "2026-10-10T15:45:18.796Z"
 }
