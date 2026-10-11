@@ -1,0 +1,15 @@
+{
+  "gatewayUrl": "https://converter-deaths-webpage-walnut.trycloudflare.com",
+  "gameTunnel": {
+    "host": "rails-switching.tun.ply.gg",
+    "port": 63854,
+    "protocol": "UDP"
+  },
+  "alfaNode": "The Frog Host (Apocalipto PZ)",
+  "latestVersion": "1.0.9",
+  "minRequiredVersion": "1.0.9",
+  "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
+  "sha256": "e204d12463306d9295e82eefcaf3d8d6cdbaebcc9403d390182f9758047689ce",
+  "changelog": "Versión 1.0.9 Oficial: Modo Servidor Dedicado estable, credenciales auto-completadas y script batch de ejecución directa.",
+  "updatedAt": "2026-10-11T16:28:00Z"
+}
