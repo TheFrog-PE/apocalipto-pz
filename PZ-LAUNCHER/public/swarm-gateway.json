@@ -1,0 +1,15 @@
+{
+  "gatewayUrl": "https://des-fashion-cave-asset.trycloudflare.com",
+  "gameTunnel": {
+    "host": "rails-switching.tun.ply.gg",
+    "port": 63854,
+    "protocol": "UDP"
+  },
+  "alfaNode": "The Frog Host (Apocalipto PZ)",
+  "latestVersion": "1.0.9",
+  "minRequiredVersion": "1.0.9",
+  "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
+  "sha256": "e639128a64ecc8935dbe7ce2e6d8e30972fe34c4fc4525b5d45968e09a78c49e",
+  "changelog": "Versión 1.0.9 Oficial: Sincronización en tiempo real de facciones con Bento OS, expulsión de Whitelist y enlace local prioritario.",
+  "updatedAt": "2026-10-15T15:31:00.000Z"
+}
