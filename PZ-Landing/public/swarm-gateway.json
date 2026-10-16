@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.9",
-  "minRequiredVersion": "1.0.9",
+  "latestVersion": "1.0.10",
+  "minRequiredVersion": "1.0.10",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "e639128a64ecc8935dbe7ce2e6d8e30972fe34c4fc4525b5d45968e09a78c49e",
-  "changelog": "Versión 1.0.9 Oficial: Sincronización en tiempo real de facciones con Bento OS, expulsión de Whitelist y enlace local prioritario.",
-  "updatedAt": "2026-10-16T18:46:37.870Z"
+  "sha256": "d733cbe380e0689929aebc1b8ceb05817c6ca45a519080ccb0e615fff2c56b8b",
+  "changelog": "Versión 1.0.10 Oficial: Conexión directa al mundo sin popups de credenciales, corrección de puerto dinámico y bypass automático de Steam Relay.",
+  "updatedAt": "2026-10-16T23:56:00.000Z"
 }
