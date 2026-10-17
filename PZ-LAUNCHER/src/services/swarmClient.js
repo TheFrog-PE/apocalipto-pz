@@ -10,7 +10,7 @@
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
 const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 const ALT_BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
-export const FALLBACK_PUBLIC_GATEWAY = 'https://neither-following-cincinnati-erp.trycloudflare.com';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://responsibilities-cancel-supplements-call.trycloudflare.com';
 
 let cachedRemoteGateway = null;
 let isLocalHostActive = false;

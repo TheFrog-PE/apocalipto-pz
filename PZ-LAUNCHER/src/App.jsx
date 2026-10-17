@@ -177,6 +177,16 @@ export default function App() {
                 setApprovedFaction(fid);
                 setSelectedFaction(fid);
               }
+              const ticketUser = statusData.ticket.payload?.username;
+              if (ticketUser) {
+                setSurvivorName(prev => (!prev || prev.startsWith('Superviviente_') ? ticketUser : prev));
+                try {
+                  const currentSaved = localStorage.getItem('pz_survivor_name');
+                  if (!currentSaved || currentSaved.startsWith('Superviviente_')) {
+                    localStorage.setItem('pz_survivor_name', ticketUser);
+                  }
+                } catch {}
+              }
             } else if (statusData.status === 'NOT_FOUND' && approvedFaction) {
               // Si fue reseteado en el servidor
               try {
