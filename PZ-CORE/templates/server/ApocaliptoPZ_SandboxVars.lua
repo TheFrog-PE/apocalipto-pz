@@ -791,7 +791,7 @@ SandboxVars = {
         -- 4 = Aleatorio
         Speed = 4,
         -- Si Velocidad aleatoria está activada, esto controla qué porcentaje de zombis son Sprinters. Marca la casilla "Avanzado" de abajo para usar un porcentaje personalizado. Mínimo=0 Máximo=100 Por defecto=0
-        SprinterPercentage = 0,
+        SprinterPercentage = 8,
         -- Controla el daño que infligen los zombis por ataque. Por defecto=Normal
         -- 1 = Superhumano
         -- 2 = Normal
@@ -832,9 +832,9 @@ SandboxVars = {
         -- 2 = Exploración
         -- 3 = Exploración básica
         -- 4 = Aleatorio
-        Cognition = 3,
+        Cognition = 4,
         -- Mínimo=0 Máximo=100 Por defecto=0
-        DoorOpeningPercentage = 0,
+        DoorOpeningPercentage = 8,
         -- Controla qué zombis pueden arrastrarse bajo los vehículos. Por defecto=A menudo
         -- 1 = Sólo reptantes
         -- 2 = Extremadamente raro

@@ -9,7 +9,7 @@
   "latestVersion": "1.1.1",
   "minRequiredVersion": "1.1.1",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "76c98a1efe409bc47ca59f3afda43f888a85bc1d1cf318c7998a0bdb33c52c69",
+  "sha256": "45575c4de3786ee8f67905a06a790d55cf23779f057a612bc8c502175eed15f6",
   "changelog": "Versión 1.1.1: Conectividad Cloudflare Tunnel sin restricciones, resolución DNS distribuida dual GitHub, sincronización en tiempo real de conteo de facciones y jugadores en vivo RCON.",
-  "updatedAt": "2026-10-17T01:36:03.137Z"
+  "updatedAt": "2026-10-17T01:54:49.247Z"
 }

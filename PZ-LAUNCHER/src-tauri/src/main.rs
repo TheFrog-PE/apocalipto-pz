@@ -567,18 +567,26 @@ fn apply_update(binary_data_base64: String, expected_sha256: String) -> Result<S
         let temp_setup = temp_dir.join("ApocaliptoPZ-Setup-Update.exe");
         fs::write(&temp_setup, &bytes).map_err(|e| format!("Error al guardar instalador temporal: {}", e))?;
 
-        // 4. Identificar el ejecutable actual para relanzarlo tras la instalación
+        // 4. Identificar el ejecutable actual y la ruta de instalación oficial en LOCALAPPDATA
         let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        let target_installed_exe = if !local_app_data.is_empty() {
+            std::path::PathBuf::from(&local_app_data).join("ApocaliptoPZ").join("ApocaliptoPZ.exe")
+        } else {
+            current_exe.clone()
+        };
 
-        // 5. Crear script batch desacoplado en %TEMP% para evitar errores de comillas en CMD de Windows:
+        // 5. Crear script batch desacoplado en %TEMP%:
         //    - ping 127.0.0.1 -n 3: espera 2 segundos exactos para que el launcher actual termine y libere el binario
         //    - start /wait "" "temp_setup" /S: instala silenciosamente la nueva versión
-        //    - start "" "current_exe": relanza el launcher actualizado
+        //    - Relanza el launcher actualizado desde la ruta de instalación o la actual
         //    - (goto) 2>nul & del "%~f0": auto-elimina el script temporal
         let bat_path = temp_dir.join("apocalipto_run_update.bat");
         let bat_script = format!(
-            "@echo off\r\nping 127.0.0.1 -n 3 >nul\r\nstart /wait \"\" \"{}\" /S\r\nstart \"\" \"{}\"\r\n(goto) 2>nul & del \"%~f0\"\r\n",
+            "@echo off\r\nping 127.0.0.1 -n 3 >nul\r\nstart /wait \"\" \"{}\" /S\r\nif exist \"{}\" (\r\n  start \"\" \"{}\"\r\n) else (\r\n  start \"\" \"{}\"\r\n)\r\n(goto) 2>nul & del \"%~f0\"\r\n",
             temp_setup.to_string_lossy(),
+            target_installed_exe.to_string_lossy(),
+            target_installed_exe.to_string_lossy(),
             current_exe.to_string_lossy()
         );
         fs::write(&bat_path, bat_script).map_err(|e| format!("Error al crear script de actualización: {}", e))?;

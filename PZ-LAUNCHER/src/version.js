@@ -1,5 +1,6 @@
-export const LAUNCHER_VERSION = '1.1.0';
+export const LAUNCHER_VERSION = '1.1.1';
 export const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
+export const FALLBACK_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 export const DEFAULT_DOWNLOAD_URL = 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
 
 /**
@@ -25,29 +26,36 @@ export function compareVersions(a, b) {
  * Consulta en GitHub el registro del enjambre para verificar si hay una nueva versión requerida
  */
 export async function checkLauncherUpdate() {
-  try {
-    const cacheBuster = Date.now();
-    const res = await fetch(`${BOOTSTRAP_REGISTRY_URL}?t=${cacheBuster}`, {
-      signal: AbortSignal.timeout(4000)
-    });
-    if (!res.ok) return { updateAvailable: false, updateRequired: false };
-    const data = await res.json();
-    const latest = data.latestVersion || data.launcherVersion || '1.0.0';
-    const minRequired = data.minRequiredVersion || latest;
-    
-    const isOutdated = compareVersions(LAUNCHER_VERSION, latest) < 0;
-    const isRequired = compareVersions(LAUNCHER_VERSION, minRequired) < 0;
+  const cacheBuster = Date.now();
+  const urls = [
+    `${BOOTSTRAP_REGISTRY_URL}?t=${cacheBuster}`,
+    `${FALLBACK_REGISTRY_URL}?t=${cacheBuster}`
+  ];
 
-    return {
-      currentVersion: LAUNCHER_VERSION,
-      latestVersion: latest,
-      updateAvailable: isOutdated,
-      updateRequired: isRequired,
-      downloadUrl: data.downloadUrl || DEFAULT_DOWNLOAD_URL,
-      sha256: data.sha256 || '',
-      changelog: data.changelog || data.notes || 'Actualización obligatoria para sincronizar con la red P2P del Enjambre.'
-    };
-  } catch (e) {
-    return { updateAvailable: false, updateRequired: false };
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(4000)
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const latest = data.latestVersion || data.launcherVersion || '1.0.0';
+      const minRequired = data.minRequiredVersion || latest;
+      
+      const isOutdated = compareVersions(LAUNCHER_VERSION, latest) < 0;
+      const isRequired = compareVersions(LAUNCHER_VERSION, minRequired) < 0;
+
+      return {
+        currentVersion: LAUNCHER_VERSION,
+        latestVersion: latest,
+        updateAvailable: isOutdated,
+        updateRequired: isRequired,
+        downloadUrl: data.downloadUrl || DEFAULT_DOWNLOAD_URL,
+        sha256: data.sha256 || '',
+        changelog: data.changelog || data.notes || 'Actualización obligatoria para sincronizar con la red P2P del Enjambre.'
+      };
+    } catch {}
   }
+
+  return { updateAvailable: false, updateRequired: false };
 }
