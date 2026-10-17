@@ -1,4 +1,4 @@
-﻿{
+{
   "gatewayUrl": "https://neither-following-cincinnati-erp.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.1",
-  "minRequiredVersion": "1.1.1",
+  "latestVersion": "1.1.2",
+  "minRequiredVersion": "1.1.2",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "4a9d2be3d5d3ad3acf5da8934bcc170f65c39026938f948c7d7c49c8d9a11904",
-  "changelog": "Versión 1.1.1: Conectividad Cloudflare Tunnel sin restricciones, resolución DNS distribuida dual GitHub, sincronización en tiempo real de conteo de facciones y jugadores en vivo RCON.",
-  "updatedAt": "2026-10-17T02:08:26.902Z"
+  "sha256": "05848027f10fb1f43ae0d8888a30ad26042e59829a9268dfe4a43f60ad193d2e",
+  "changelog": "Versión 1.1.2: Eliminación en tachos y contenedores habilitada (TrashDeleteAll), auto-sincronización de facción con visibilidad por defecto de miembros en mapa y minimapa, y activación automática del fondo de arte moderno Build 42.",
+  "updatedAt": "2026-10-17T10:02:00.000Z"
 }

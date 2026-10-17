@@ -404,6 +404,140 @@ end
                     }
                 }
 
+                // Inyectar script de auto-sincronización de facción y visibilidad en mapa/minimapa
+                let faction_sync_path = pz_dir.join("media").join("lua").join("client").join("ApocaliptoFactionAutoSync.lua");
+                let lua_sync_content = r##"-- [APOCALIPTO PZ] Sincronización Automática de Facción y Visibilidad en Mapa / Minimapa
+local factionColors = {
+    DOE = { r = 0.20, g = 0.50, b = 1.00 },
+    MOK = { r = 0.95, g = 0.20, b = 0.20 },
+    KTO = { r = 1.00, g = 0.70, b = 0.10 },
+    RIV = { r = 0.10, g = 0.85, b = 0.45 },
+}
+
+local function syncApocaliptoFaction(player)
+    if not player then player = getPlayer() end
+    if not player then return end
+
+    local uName = player:getUsername()
+    local session = _G.ApocaliptoSession
+
+    if not session or not session.faction then
+        pcall(function()
+            local reader = getFileReader("apocalipto_session.ini", false)
+            if reader then
+                local params = {}
+                while true do
+                    local line = reader:readLine()
+                    if line == nil then break end
+                    line = string.trim(line)
+                    if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+                        local sep = string.find(line, "=")
+                        if sep then
+                            local k = string.trim(string.sub(line, 1, sep - 1))
+                            local v = string.trim(string.sub(line, sep + 1))
+                            params[k] = v
+                        end
+                    end
+                end
+                reader:close()
+                session = params
+                _G.ApocaliptoSession = params
+            end
+        end)
+    end
+
+    if not session or not session.faction then return end
+
+    local targetFaction = string.upper(session.faction)
+    if targetFaction == "" then return end
+
+    local fact = Faction.getPlayerFaction(player)
+    if not fact then
+        fact = Faction.getFaction(targetFaction)
+        if not fact then
+            pcall(function()
+                if sendFactionCreate then
+                    sendFactionCreate(targetFaction, uName)
+                end
+            end)
+            pcall(function()
+                fact = Faction.new(targetFaction, uName)
+                if fact then
+                    fact:setTag(targetFaction)
+                    local col = factionColors[targetFaction]
+                    if col and ColorInfo then
+                        fact:setTagColor(ColorInfo.new(col.r, col.g, col.b, 1))
+                    end
+                    Faction.getFactions():add(fact)
+                end
+            end)
+        else
+            if not fact:isOwner(uName) and not fact:isMember(uName) then
+                pcall(function()
+                    fact:addPlayer(uName)
+                    local col = factionColors[targetFaction]
+                    if col and ColorInfo then
+                        fact:setTagColor(ColorInfo.new(col.r, col.g, col.b, 1))
+                    end
+                end)
+            end
+        end
+    else
+        pcall(function()
+            if not fact:getTag() or fact:getTag() == "" then
+                fact:setTag(fact:getName())
+            end
+            local col = factionColors[fact:getName()]
+            if col and ColorInfo then
+                fact:setTagColor(ColorInfo.new(col.r, col.g, col.b, 1))
+            end
+        end)
+    end
+
+    pcall(function()
+        if ISWorldMap_instance then
+            ISWorldMap_instance.showRemotePlayers = true
+            ISWorldMap_instance.showPlayerNames = true
+            if ISWorldMap_instance.mapAPI then
+                ISWorldMap_instance.mapAPI:setBoolean("RemotePlayers", true)
+                ISWorldMap_instance.mapAPI:setBoolean("PlayerNames", true)
+            end
+        end
+    end)
+
+    pcall(function()
+        if ISMiniMap and ISMiniMap.mapAPI then
+            ISMiniMap.mapAPI:setBoolean("RemotePlayers", true)
+            ISMiniMap.mapAPI:setBoolean("PlayerNames", true)
+            ISMiniMap.mapAPI:setBoolean("MiniMapSymbols", true)
+        end
+    end)
+end
+
+Events.OnGameStart.Add(syncApocaliptoFaction)
+Events.OnPlayerSpawn.Add(syncApocaliptoFaction)
+Events.OnCreatePlayer.Add(function(id)
+    local p = getSpecificPlayer(id)
+    if p then syncApocaliptoFaction(p) end
+end)
+Events.EveryOneMinute.Add(function()
+    local p = getPlayer()
+    if p then syncApocaliptoFaction(p) end
+end)
+"##;
+                let _ = fs::write(&faction_sync_path, lua_sync_content);
+
+                // Asegurar doVideoEffects=true en options.ini para que se muestre el fondo moderno de B42
+                if let Ok(user_profile) = std::env::var("USERPROFILE") {
+                    let options_path = std::path::Path::new(&user_profile).join("Zomboid").join("options.ini");
+                    if let Ok(opts) = fs::read_to_string(&options_path) {
+                        if opts.contains("doVideoEffects=false") {
+                            let updated_opts = opts.replace("doVideoEffects=false", "doVideoEffects=true");
+                            let _ = fs::write(&options_path, updated_opts);
+                        }
+                    }
+                }
+
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
