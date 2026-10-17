@@ -273,7 +273,7 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
                     <Server className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>
                       {isRemoteNode
-                        ? 'SERVIDOR: rails-switching.tun.ply.gg:63854'
+                        ? 'SERVIDOR: rails-switching.tun.ply.gg:63855'
                         : 'ENLACE LOCAL: 127.0.0.1:16261 (ANFITRIÓN)'}
                     </span>
                   </div>
@@ -281,8 +281,8 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
                     <button
                       onClick={() => {
                         try {
-                          navigator.clipboard.writeText('rails-switching.tun.ply.gg:63854');
-                          setLaunchMessage('✓ IP copiada: rails-switching.tun.ply.gg:63854');
+                          navigator.clipboard.writeText('rails-switching.tun.ply.gg:63855');
+                          setLaunchMessage('✓ IP copiada: rails-switching.tun.ply.gg:63855');
                         } catch {}
                       }}
                       className="text-[9px] px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 rounded border border-emerald-500/40 cursor-pointer"
@@ -293,7 +293,7 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
                 </div>
                 <div className="text-zinc-400 text-[10px]">
                   {isRemoteNode
-                    ? 'Túnel P2P Activo • Puerto: 63854 • Contraseña: 12345 • Permiso: ACTIVO'
+                    ? 'Túnel P2P Activo • Puerto: 63855 • Contraseña: 12345 • Permiso: ACTIVO'
                     : 'Save-Chain: BLOQUE #1 SYNC • Criptografía: ED25519 • Permiso Permanente: ACTIVO'}
                 </div>
               </motion.div>
@@ -386,9 +386,9 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
                 if (res.success) {
                   if (res.isRemote) {
                     try {
-                      navigator.clipboard.writeText(`${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63854}`);
+                      navigator.clipboard.writeText(`${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63855}`);
                     } catch {}
-                    setLaunchMessage(`✓ Steam iniciado. IP copiada (${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63854})`);
+                    setLaunchMessage(`✓ Steam iniciado. IP copiada (${res.serverHost || 'rails-switching.tun.ply.gg'}:${res.serverPort || 63855})`);
                   } else {
                     setLaunchMessage(`✓ Conectando como ${finalPlayerName}... Revisa la barra de tareas.`);
                   }

@@ -2,14 +2,14 @@
   "gatewayUrl": "https://neither-following-cincinnati-erp.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
-    "port": 63854,
+    "port": 63855,
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.2",
-  "minRequiredVersion": "1.1.2",
+  "latestVersion": "1.1.3",
+  "minRequiredVersion": "1.1.3",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "05848027f10fb1f43ae0d8888a30ad26042e59829a9268dfe4a43f60ad193d2e",
-  "changelog": "Versión 1.1.2: Eliminación en tachos y contenedores habilitada (TrashDeleteAll), auto-sincronización de facción con visibilidad por defecto de miembros en mapa y minimapa, y activación automática del fondo de arte moderno Build 42.",
-  "updatedAt": "2026-10-17T10:02:00.000Z"
+  "sha256": "fb1864001e73a60374f1e675eb20c2cc989cd0bd82103acfc706da219e8e4ea9",
+  "changelog": "Versión 1.1.3: Corrección crítica del puerto de conexión RakNet UDP (63855 -> 16262) para enlaces directos por Internet sin rechazo ni desconexión.",
+  "updatedAt": "2026-10-17T11:31:00.000Z"
 }
