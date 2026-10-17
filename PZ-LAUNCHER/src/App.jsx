@@ -211,10 +211,19 @@ export default function App() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [mouseCoords, setMouseCoords] = useState({ x: -1000, y: -1000 });
 
-  // Cambio libre de facción antes de ser aprobado por el creador
-  const handleSelectFaction = (factionId) => {
-    if (approvedFaction) return; // Si ya tiene facción fijada, no cambia hasta reiniciar personaje
+  // Cambio libre y fluido de facción
+  const handleSelectFaction = async (factionId) => {
     setSelectedFaction(factionId);
+    setApprovedFaction(factionId);
+    try {
+      localStorage.setItem('apocalipto_chosen_faction', factionId);
+      const localId = getOrCreateLocalIdentity();
+      if (localId?.nodeId) {
+        const factObj = factions.find(f => f.id === factionId);
+        const factionTag = factObj?.tag || factionId.toUpperCase();
+        await setSwarmNodeFaction(localId.nodeId, factionTag, factionId);
+      }
+    } catch {}
   };
 
   const handleResetFaction = async () => {
@@ -229,7 +238,7 @@ export default function App() {
     setShowLaunchModal(false);
     handleShowToast({
       title: 'PERSONAJE REINICIADO',
-      desc: 'Tu personaje ha sido eliminado y se ha liberado la selección de facción. Elige una nueva facción y tu alias.',
+      desc: 'Tu personaje ha sido reiniciado con éxito. Ahora puedes elegir libremente cualquier facción (DOE, MOK, KTO, RIV) y nombre.',
       type: 'info'
     });
   };

@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.4",
-  "minRequiredVersion": "1.1.4",
+  "latestVersion": "1.1.5",
+  "minRequiredVersion": "1.1.5",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "f42a8187aa28b5ea995473030aa9a798578537b57429c88b4db93967c0679355",
-  "changelog": "Versión 1.1.4: Resiliencia de sesión garantizada (doble lectura sin truncamiento de connect.ini), auto-whitelist en SQLite/RCON, corrección de NullPointerException en facciones y ZIP de descarga actualizado.",
-  "updatedAt": "2026-10-17T13:02:00.000Z"
+  "sha256": "b64c37a7d0d05cfe73decd36c674d7c2970609dc7904e8f9e3264b5ae8f274f6",
+  "changelog": "Versión 1.1.5: Selección libre y cambio fluido entre las 4 facciones (DOE, MOK, KTO, RIV), reinicio limpio de personajes, admisión permanente para pugnubi y enlace directo UDPRakNet 63855.",
+  "updatedAt": "2026-10-17T14:36:00.000Z"
 }
