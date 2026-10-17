@@ -103,6 +103,8 @@ export default function App() {
   const [showWorldConfigModal, setShowWorldConfigModal] = useState(false);
   const [inspectingFactionId, setInspectingFactionId] = useState(null);
   const [approvedNodes, setApprovedNodes] = useState({});
+  const [liveOnlineCount, setLiveOnlineCount] = useState(0);
+  const [liveOnlinePlayers, setLiveOnlinePlayers] = useState([]);
   const [worldStatus, setWorldStatus] = useState('CHECKING'); // 'ONLINE' | 'STARTING' | 'OFFLINE' | 'CHECKING'
   const [worldProgress, setWorldProgress] = useState({ percent: 0, phase: 'Verificando...' });
   const [bypassStandby, setBypassStandby] = useState(false);
@@ -426,6 +428,12 @@ export default function App() {
           if (stats && stats.totalApproved !== undefined) {
             setAuditedCount(stats.totalApproved);
           }
+          if (stats && stats.onlineCount !== undefined) {
+            setLiveOnlineCount(stats.onlineCount);
+          }
+          if (stats && stats.onlinePlayers) {
+            setLiveOnlinePlayers(stats.onlinePlayers);
+          }
           if (stats && stats.approvedNodes) {
             setApprovedNodes(stats.approvedNodes);
           }
@@ -600,8 +608,8 @@ export default function App() {
       if (!target) return false;
       if (target === 'mok') return fid.includes('mok') || fid.includes('kin') || fid.includes('merod');
       if (target === 'kto') return fid.includes('kto') || fid.includes('testam') || fid.includes('knox');
-      if (target === 'riv') return fid.includes('riv') || fid.includes('centin');
-      if (target === 'doe') return fid.includes('doe') || fid.includes('emerg') || fid.includes('milit');
+      if (target === 'riv') return fid.includes('riv') || fid.includes('centin') || fid.includes('resistencia') || fid.includes('indie') || fid.includes('vecinal');
+      if (target === 'doe') return fid.includes('doe') || fid.includes('emerg') || fid.includes('milit') || fid.includes('division') || fid.includes('operaciones') || fid.includes('especiales');
       return fid.includes(target) || target.includes(fid);
     })
     .map(item => {
@@ -609,6 +617,7 @@ export default function App() {
       return {
         nodeId: p.nodeId,
         steamId: p.steamId,
+        username: p.username || '',
         faction: p.faction,
         factionId: p.factionId,
         assignedRole: p.assignedRole,
@@ -667,6 +676,8 @@ export default function App() {
         onOpenMods={() => setExpandedModule('mods')}
         onTriggerAlert={triggerAlert} 
         totalOccupied={totalOccupied}
+        liveOnlineCount={liveOnlineCount}
+        liveOnlinePlayers={liveOnlinePlayers}
         worldStatus={worldStatus}
         worldProgress={worldProgress}
         onStartWorld={handleStartWorld}
@@ -677,6 +688,7 @@ export default function App() {
       <TelemetryBar 
         onOpenBlockchain={() => setExpandedModule('blockchain')} 
         totalOccupied={totalOccupied}
+        liveOnlineCount={liveOnlineCount}
       />
 
       {/* ── 3. VISTAS PRINCIPALES (BENTO O ENFOQUE EXPANDIDO DE LOS 4 MÓDULOS) ── */}

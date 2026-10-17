@@ -93,6 +93,32 @@ export class SwarmBridgeServer {
     }
   }
 
+  async _getLivePlayers() {
+    const now = Date.now();
+    if (this._livePlayersCache && (now - (this._livePlayersCacheTime || 0) < 3000)) {
+      return this._livePlayersCache;
+    }
+    let livePlayers = [];
+    try {
+      if (this.rcon) {
+        const res = await this.rcon.execute('players', 2000);
+        if (res && res.success && res.response) {
+          const lines = res.response.split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('-')) {
+              const name = trimmed.replace(/^-\s*/, '').trim();
+              if (name) livePlayers.push(name);
+            }
+          }
+        }
+      }
+    } catch {}
+    this._livePlayersCache = livePlayers;
+    this._livePlayersCacheTime = now;
+    return livePlayers;
+  }
+
   /**
    * Verifica que una IP no esté spameando para proteger la CPU del host
    */
@@ -730,15 +756,19 @@ export class SwarmBridgeServer {
           }
           const fid = (item.payload?.factionId || item.payload?.faction || '').toLowerCase();
           if (fid.includes('mok') || fid.includes('kin') || fid.includes('merod')) counts.mok++;
-          else if (fid.includes('kto') || fid.includes('testam') || fid.includes('knox')) counts.kto++;
-          else if (fid.includes('riv') || fid.includes('centin')) counts.riv++;
-          else if (fid.includes('doe') || fid.includes('emerg') || fid.includes('milit')) counts.doe++;
+          else if (fid.includes('kto') || fid.includes('testam') || fid.includes('knox') || fid.includes('oscur')) counts.kto++;
+          else if (fid.includes('riv') || fid.includes('centin') || fid.includes('resistencia') || fid.includes('indie') || fid.includes('vecinal')) counts.riv++;
+          else if (fid.includes('doe') || fid.includes('emerg') || fid.includes('milit') || fid.includes('division') || fid.includes('operaciones') || fid.includes('especiales')) counts.doe++;
         }
+
+        const livePlayers = await this._getLivePlayers();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
           totalApproved: nodesList.length,
           counts,
+          onlineCount: livePlayers.length,
+          onlinePlayers: livePlayers,
           maxPublicSlots: 40,
           maxAdminGhostSlots: 10,
           totalServerSlots: 50,
@@ -758,16 +788,20 @@ export class SwarmBridgeServer {
         for (const item of nodesList) {
           const fid = (item.payload?.factionId || item.payload?.faction || '').toLowerCase();
           if (fid.includes('mok') || fid.includes('kin') || fid.includes('merod')) counts.mok++;
-          else if (fid.includes('kto') || fid.includes('testam') || fid.includes('knox')) counts.kto++;
-          else if (fid.includes('riv') || fid.includes('centin')) counts.riv++;
-          else if (fid.includes('doe') || fid.includes('emerg') || fid.includes('milit')) counts.doe++;
+          else if (fid.includes('kto') || fid.includes('testam') || fid.includes('knox') || fid.includes('oscur')) counts.kto++;
+          else if (fid.includes('riv') || fid.includes('centin') || fid.includes('resistencia') || fid.includes('indie') || fid.includes('vecinal')) counts.riv++;
+          else if (fid.includes('doe') || fid.includes('emerg') || fid.includes('milit') || fid.includes('division') || fid.includes('operaciones') || fid.includes('especiales')) counts.doe++;
         }
+
+        const livePlayers = await this._getLivePlayers();
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
           success: true,
           totalApproved: nodesList.length,
           counts,
+          onlineCount: livePlayers.length,
+          onlinePlayers: livePlayers,
           maxPublicSlots: 40,
           totalServerSlots: 50
         }));

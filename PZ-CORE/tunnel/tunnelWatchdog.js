@@ -3,9 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const CLOUDFLARED_BIN = 'E:\\PZ-PROYECT\\PZ-CORE\\tunnel\\cloudflared.exe';
+const ROOT_REPO_DIR = 'E:\\PZ-PROYECT';
+const ROOT_GATEWAY_FILE = 'E:\\PZ-PROYECT\\public\\swarm-gateway.json';
 const LANDING_GATEWAY_FILE = 'E:\\PZ-PROYECT\\PZ-Landing\\public\\swarm-gateway.json';
+const LANDING_DIST_GATEWAY_FILE = 'E:\\PZ-PROYECT\\PZ-Landing\\dist\\swarm-gateway.json';
 const LAUNCHER_GATEWAY_FILE = 'E:\\PZ-PROYECT\\PZ-LAUNCHER\\public\\swarm-gateway.json';
-const LANDING_REPO_DIR = 'E:\\PZ-PROYECT\\PZ-Landing';
+const TUNNEL_CONFIG_FILE = 'E:\\PZ-PROYECT\\PZ-CORE\\tunnel\\tunnel_config.json';
 
 let currentTunnelUrl = null;
 let cloudflaredProc = null;
@@ -17,8 +20,9 @@ function log(msg) {
 
 function updateGatewayOnGitHub(newUrl) {
   try {
-    if (!fs.existsSync(LANDING_GATEWAY_FILE)) return;
-    const config = JSON.parse(fs.readFileSync(LANDING_GATEWAY_FILE, 'utf8'));
+    const templateFile = fs.existsSync(LAUNCHER_GATEWAY_FILE) ? LAUNCHER_GATEWAY_FILE : LANDING_GATEWAY_FILE;
+    if (!fs.existsSync(templateFile)) return;
+    const config = JSON.parse(fs.readFileSync(templateFile, 'utf8'));
     if (config.gatewayUrl === newUrl) {
       log(`El gateway ya está actualizado con ${newUrl}`);
       return;
@@ -28,18 +32,42 @@ function updateGatewayOnGitHub(newUrl) {
     config.updatedAt = new Date().toISOString();
 
     const jsonStr = JSON.stringify(config, null, 2);
-    fs.writeFileSync(LANDING_GATEWAY_FILE, jsonStr, 'utf8');
-    if (fs.existsSync(path.dirname(LAUNCHER_GATEWAY_FILE))) {
-      fs.writeFileSync(LAUNCHER_GATEWAY_FILE, jsonStr, 'utf8');
+
+    // Escribir en todas las ubicaciones requeridas
+    const targetFiles = [
+      ROOT_GATEWAY_FILE,
+      LANDING_GATEWAY_FILE,
+      LAUNCHER_GATEWAY_FILE,
+      LANDING_DIST_GATEWAY_FILE
+    ];
+
+    for (const f of targetFiles) {
+      try {
+        const dir = path.dirname(f);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(f, jsonStr, 'utf8');
+      } catch {}
     }
 
-    log(`Actualizado swarm-gateway.json localmente con ${newUrl}`);
-
-    // Commit y push a GitHub con las credenciales oficiales
+    // Actualizar tunnel_config.json local
     try {
-      execSync('git add public/swarm-gateway.json', { cwd: LANDING_REPO_DIR, stdio: 'ignore' });
-      execSync('git commit -m "chore(tunnel-watchdog): auto-actualizar URL de Cloudflare Tunnel"', { cwd: LANDING_REPO_DIR, stdio: 'ignore' });
-      execSync('git push origin main', { cwd: LANDING_REPO_DIR, stdio: 'ignore' });
+      if (fs.existsSync(TUNNEL_CONFIG_FILE)) {
+        const tConf = JSON.parse(fs.readFileSync(TUNNEL_CONFIG_FILE, 'utf8'));
+        if (tConf.bridgeTunnel) {
+          tConf.bridgeTunnel.url = newUrl;
+          tConf.configuredAt = new Date().toISOString();
+          fs.writeFileSync(TUNNEL_CONFIG_FILE, JSON.stringify(tConf, null, 2), 'utf8');
+        }
+      }
+    } catch {}
+
+    log(`Actualizado swarm-gateway.json en todos los puntos locales con ${newUrl}`);
+
+    // Commit y push a GitHub con las credenciales oficiales desde la raíz del repo
+    try {
+      execSync('git add public/swarm-gateway.json PZ-Landing/public/swarm-gateway.json PZ-LAUNCHER/public/swarm-gateway.json', { cwd: ROOT_REPO_DIR, stdio: 'ignore' });
+      execSync('git commit -m "chore(tunnel-watchdog): auto-actualizar URL de Cloudflare Tunnel [skip ci]"', { cwd: ROOT_REPO_DIR, stdio: 'ignore' });
+      execSync('git push origin main', { cwd: ROOT_REPO_DIR, stdio: 'ignore' });
       log(`🚀 ¡URL de Gateway publicada con éxito en GitHub! ${newUrl}`);
     } catch (gitErr) {
       log(`Advertencia en git push: ${gitErr.message}`);

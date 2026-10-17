@@ -9,10 +9,10 @@
     "datacenter": "Santiago, Chile"
   },
   "bridgeTunnel": {
-    "url": "https://glance-civilization-samuel-very.trycloudflare.com",
+    "url": "https://neither-following-cincinnati-erp.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-09-29T20:55:00Z"
+  "configuredAt": "2026-10-17T06:18:39.048Z"
 }

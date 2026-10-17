@@ -9,6 +9,8 @@ export default function Header({
   onOpenMods,
   onTriggerAlert, 
   totalOccupied = 0,
+  liveOnlineCount = 0,
+  liveOnlinePlayers = [],
   worldStatus = 'CHECKING',
   worldProgress = { percent: 0, phase: 'Iniciando...' },
   onStartWorld,
@@ -37,11 +39,17 @@ export default function Header({
           </div>
         </div>
 
-        {/* Indicador de Jugadores Conectados */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-zinc-900/80 border border-zinc-800 px-2.5 py-1 rounded-full shrink-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-          <span className="text-zinc-300 font-bold tracking-wider text-[10px] sm:text-[11px] font-mono whitespace-nowrap">
-            ONLINE: {totalOccupied} / 40
+        {/* Indicador de Jugadores Conectados en Tiempo Real */}
+        <div 
+          className="flex items-center gap-1.5 sm:gap-2 bg-zinc-900/90 border border-emerald-500/30 px-2.5 py-1 rounded-full shrink-0 shadow-sm"
+          title={liveOnlinePlayers.length > 0 ? `En el mapa: ${liveOnlinePlayers.join(', ')}` : 'Sin supervivientes en el mapa actualmente'}
+        >
+          <span className={`w-2 h-2 rounded-full ${liveOnlineCount > 0 ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500/50'} inline-block`} />
+          <span className="text-zinc-200 font-bold tracking-wider text-[10px] sm:text-[11px] font-mono whitespace-nowrap">
+            EN VIVO: <span className="text-emerald-400">{liveOnlineCount}</span> JUGANDO
+          </span>
+          <span className="text-zinc-500 text-[9px] font-mono whitespace-nowrap">
+            (WL: {totalOccupied}/40)
           </span>
         </div>
       </div>

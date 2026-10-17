@@ -8,7 +8,8 @@
  */
 
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
-const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
+const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
+const ALT_BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
 export const FALLBACK_PUBLIC_GATEWAY = 'http://127.0.0.1:19842';
 
 let cachedRemoteGateway = null;
@@ -16,39 +17,36 @@ let isLocalHostActive = false;
 
 // Inicialización de descubrimiento al arrancar el cliente
 if (typeof window !== 'undefined') {
-  // Limpiar URLs caducadas de TryCloudflare
-  try {
-    const saved = localStorage.getItem('apocalipto_swarm_gateway');
-    if (saved && saved.includes('trycloudflare.com')) {
-      localStorage.removeItem('apocalipto_swarm_gateway');
-    }
-  } catch {}
-
   // 1. Probar rápidamente si el Bridge corre en esta máquina local (PC de The Frog / Anfitrión)
-  fetch('http://127.0.0.1:19842/api/health', { signal: AbortSignal.timeout(2000) })
+  fetch('http://127.0.0.1:19842/api/health', { signal: AbortSignal.timeout(1500) })
     .then(r => {
-      if (r.ok) {
-        isLocalHostActive = true;
-      }
+      if (r.ok) isLocalHostActive = true;
     })
     .catch(() => {
-      // Reintentar con /health por retrocompatibilidad
-      fetch('http://127.0.0.1:19842/health', { signal: AbortSignal.timeout(2000) })
+      fetch('http://127.0.0.1:19842/health', { signal: AbortSignal.timeout(1500) })
         .then(r => {
           if (r.ok) isLocalHostActive = true;
         })
         .catch(() => {
           isLocalHostActive = false;
-          // 2. Si no es localhost, consultar el registro público en GitHub para jugadores remotos
-          fetch(`${BOOTSTRAP_REGISTRY_URL}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) })
-            .then(r => r.json())
-            .then(data => {
-              if (data && data.gatewayUrl && !data.gatewayUrl.includes('trycloudflare.com')) {
-                cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
-                localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
-              }
-            })
-            .catch(() => {});
+          // 2. Si no es localhost (jugador remoto), consultar el registro público en GitHub
+          const fetchRegistry = async () => {
+            const urls = [BOOTSTRAP_REGISTRY_URL, ALT_BOOTSTRAP_REGISTRY_URL];
+            for (const u of urls) {
+              try {
+                const res = await fetch(`${u}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data && data.gatewayUrl) {
+                    cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
+                    localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
+                    break;
+                  }
+                }
+              } catch {}
+            }
+          };
+          fetchRegistry();
         });
     });
 }
@@ -65,28 +63,29 @@ export function getSwarmBridgeUrl() {
       return 'http://127.0.0.1:19842';
     }
 
-    // Si ya obtuvimos el gateway remoto del registro de GitHub
-    if (cachedRemoteGateway && !cachedRemoteGateway.includes('trycloudflare.com')) {
+    // 1. Gateway remoto en memoria desde el registro de GitHub
+    if (cachedRemoteGateway) {
       return cachedRemoteGateway;
     }
 
-    // 1. Detección por Query Param (?gateway=...)
+    // 2. Detección por Query Param (?gateway=...)
     try {
       const params = new URLSearchParams(window.location.search);
       const gw = params.get('gateway');
-      if (gw && !gw.includes('trycloudflare.com')) {
-        localStorage.setItem('apocalipto_swarm_gateway', gw);
-        return gw.replace(/\/$/, '');
+      if (gw && gw.startsWith('http')) {
+        const cleanGw = gw.replace(/\/$/, '');
+        localStorage.setItem('apocalipto_swarm_gateway', cleanGw);
+        return cleanGw;
       }
     } catch {}
 
-    // 2. Gateway guardado previamente en localStorage
+    // 3. Gateway guardado previamente en localStorage
     const saved = localStorage.getItem('apocalipto_swarm_gateway');
-    if (saved && saved.startsWith('http') && !saved.includes('trycloudflare.com')) {
+    if (saved && saved.startsWith('http')) {
       return saved.replace(/\/$/, '');
     }
 
-    // 3. Fallback seguro: localhost
+    // 4. Fallback seguro: localhost
     return 'http://127.0.0.1:19842';
   }
   return 'http://127.0.0.1:19842';

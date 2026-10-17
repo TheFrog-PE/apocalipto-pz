@@ -87,7 +87,7 @@ export default function FactionMembersModal({
                           {member.assignedRole || 'SOMBRA'}
                         </span>
                         <span className="font-bold text-zinc-100 text-xs font-mono truncate">
-                          {member.callsign || member.nodeId}
+                          {member.username ? `${member.username} // ${member.callsign || member.nodeId}` : (member.callsign || member.nodeId)}
                         </span>
                       </div>
 
