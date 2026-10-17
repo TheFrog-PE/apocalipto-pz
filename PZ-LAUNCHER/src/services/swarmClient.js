@@ -10,51 +10,46 @@
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
 const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 const ALT_BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
-export const FALLBACK_PUBLIC_GATEWAY = 'http://127.0.0.1:19842';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://neither-following-cincinnati-erp.trycloudflare.com';
 
 let cachedRemoteGateway = null;
 let isLocalHostActive = false;
 
 // Inicialización de descubrimiento al arrancar el cliente
 if (typeof window !== 'undefined') {
-  // 1. Probar rápidamente si el Bridge corre en esta máquina local (PC de The Frog / Anfitrión)
-  fetch('http://127.0.0.1:19842/api/health', { signal: AbortSignal.timeout(1500) })
+  // 1. Probar en paralelo si el Bridge corre en esta máquina local (PC de The Frog / Anfitrión)
+  fetch('http://127.0.0.1:19842/api/health', { signal: AbortSignal.timeout(1000) })
     .then(r => {
       if (r.ok) isLocalHostActive = true;
     })
     .catch(() => {
-      fetch('http://127.0.0.1:19842/health', { signal: AbortSignal.timeout(1500) })
-        .then(r => {
-          if (r.ok) isLocalHostActive = true;
-        })
-        .catch(() => {
-          isLocalHostActive = false;
-          // 2. Si no es localhost (jugador remoto), consultar el registro público en GitHub
-          const fetchRegistry = async () => {
-            const urls = [BOOTSTRAP_REGISTRY_URL, ALT_BOOTSTRAP_REGISTRY_URL];
-            for (const u of urls) {
-              try {
-                const res = await fetch(`${u}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data && data.gatewayUrl) {
-                    cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
-                    localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
-                    break;
-                  }
-                }
-              } catch {}
-            }
-          };
-          fetchRegistry();
-        });
+      isLocalHostActive = false;
     });
+
+  // 2. En paralelo inmediato, consultar el registro público en GitHub para tener el Gateway remoto listo
+  const fetchRegistry = async () => {
+    const urls = [BOOTSTRAP_REGISTRY_URL, ALT_BOOTSTRAP_REGISTRY_URL];
+    for (const u of urls) {
+      try {
+        const res = await fetch(`${u}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(3500) });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.gatewayUrl) {
+            cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
+            localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
+            break;
+          }
+        }
+      } catch {}
+    }
+  };
+  fetchRegistry();
 }
 
 /**
  * Obtiene la dirección del Puente del Enjambre (Swarm Gateway).
  * - En la PC del Creador: usa http://127.0.0.1:19842 (modo local rápido).
- * - En la PC de jugadores remotos: usa el Gateway público del Enjambre para conectar con Bento OS.
+ * - En la PC de cualquier jugador remoto: usa el Gateway público del Enjambre.
  */
 export function getSwarmBridgeUrl() {
   if (typeof window !== 'undefined') {
@@ -85,10 +80,10 @@ export function getSwarmBridgeUrl() {
       return saved.replace(/\/$/, '');
     }
 
-    // 4. Fallback seguro: localhost
-    return 'http://127.0.0.1:19842';
+    // 4. Fallback público oficial por túnel seguro
+    return FALLBACK_PUBLIC_GATEWAY;
   }
-  return 'http://127.0.0.1:19842';
+  return FALLBACK_PUBLIC_GATEWAY;
 }
 
 export function setSwarmBridgeUrl(url) {
