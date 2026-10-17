@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://responsibilities-cancel-supplements-call.trycloudflare.com",
+  "gatewayUrl": "https://tests-warning-referenced-selection.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63855,
@@ -11,5 +11,5 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "355a18ce9ba152435ac3b5a97c8a4afde5e98d9dd171608d425a2932a7817e4a",
   "changelog": "Versión 1.1.5: Selección libre y cambio fluido entre las 4 facciones (DOE, MOK, KTO, RIV), reinicio limpio de personajes, corrección de pantalla en negro y enlace directo UDPRakNet 63855.",
-  "updatedAt": "2026-10-17T20:30:20.994Z"
+  "updatedAt": "2026-10-17T20:33:12.656Z"
 }
