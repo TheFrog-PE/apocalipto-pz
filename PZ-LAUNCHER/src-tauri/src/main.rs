@@ -215,7 +215,7 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             _G.ApocaliptoSession = params
 
             local ip = params.ip
-            local port = tostring(params.port or "63855")
+            local port = tostring(params.port or "63854")
             local pwd = params.password or "12345"
 
             if MainScreen.instance.animPopup ~= nil then

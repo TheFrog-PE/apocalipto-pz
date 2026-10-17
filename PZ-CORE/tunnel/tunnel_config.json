@@ -2,17 +2,17 @@
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "ip": "147.185.221.215",
-    "port": 63855,
-    "localPort": 16262,
+    "port": 63854,
+    "localPort": 16261,
     "protocol": "UDP",
     "provider": "Playit.gg",
     "datacenter": "Santiago, Chile"
   },
   "bridgeTunnel": {
-    "url": "https://responsibilities-cancel-supplements-call.trycloudflare.com",
+    "url": "https://tests-warning-referenced-selection.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-17T20:30:20.997Z"
+  "configuredAt": "2026-10-17T20:59:47.008Z"
 }
