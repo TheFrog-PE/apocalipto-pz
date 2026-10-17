@@ -897,13 +897,13 @@ export class SwarmBridgeServer {
           return res.end(JSON.stringify({ error: 'UNAUTHORIZED' }));
         }
 
-        // Comprobar si el proceso java.exe está corriendo
+        // Comprobar si el proceso java.exe / javaw.exe está corriendo
         let isProcessRunning = false;
         try {
           const stdout = await new Promise((resolve) => {
-            exec('tasklist /FI "IMAGENAME eq java.exe" /FO CSV /NH', (err, out) => resolve(out || ''));
+            exec('tasklist /FI "IMAGENAME eq java*" /FO CSV /NH', (err, out) => resolve(out || ''));
           });
-          if (stdout.toLowerCase().includes('java.exe')) {
+          if (stdout.toLowerCase().includes('java')) {
             isProcessRunning = true;
           }
         } catch {}
@@ -981,15 +981,15 @@ export class SwarmBridgeServer {
         let isAlreadyRunning = false;
         try {
           const stdout = await new Promise((resolve) => {
-            exec('tasklist /FI "IMAGENAME eq java.exe" /FO CSV /NH', (err, out) => resolve(out || ''));
+            exec('tasklist /FI "IMAGENAME eq java*" /FO CSV /NH', (err, out) => resolve(out || ''));
           });
-          if (stdout.toLowerCase().includes('java.exe')) {
+          if (stdout.toLowerCase().includes('java')) {
             isAlreadyRunning = true;
           }
         } catch {}
 
         if (isAlreadyRunning) {
-          console.log('[ALFA SERVER] El proceso java.exe ya está en ejecución. Evitando arranque duplicado.');
+          console.log('[ALFA SERVER] El proceso del servidor ya está en ejecución. Evitando arranque duplicado.');
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({
             success: true,
@@ -998,14 +998,13 @@ export class SwarmBridgeServer {
           }));
         }
 
-        const runnerScript = path.resolve('E:\\PZ-PROYECT\\PZ-CORE\\scripts\\runAlfaServer.bat');
-        console.log(`[ALFA SERVER] Levantando Nodo Alfa en segundo plano (Modo Silencioso / Sin Ventanas CMD)...`);
+        const vbsScript = path.resolve('E:\\PZ-PROYECT\\PZ-CORE\\scripts\\runAlfaServerSilent.vbs');
+        console.log(`[ALFA SERVER] Levantando Nodo Alfa en Modo Fantasma (100% Silencioso / Sin Ventanas CMD)...`);
 
-        const srvProc = spawn('cmd.exe', ['/c', runnerScript], {
+        const srvProc = spawn('wscript.exe', [vbsScript], {
           cwd: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\ProjectZomboid',
           detached: true,
-          stdio: 'ignore',
-          windowsHide: true
+          stdio: 'ignore'
         });
         srvProc.unref();
 
@@ -1048,7 +1047,7 @@ export class SwarmBridgeServer {
         } catch {}
 
         setTimeout(() => {
-          exec('taskkill /F /IM java.exe /T', () => {});
+          exec('taskkill /F /IM java.exe /IM javaw.exe /T', () => {});
         }, 3000);
 
         if (this._alfaEngine) {
@@ -1310,7 +1309,7 @@ export class SwarmBridgeServer {
         }
 
         if (process.platform === 'win32') {
-          exec('taskkill /IM java.exe /IM ProjectZomboid64.exe /F /T', (err) => {
+          exec('taskkill /IM java.exe /IM javaw.exe /IM ProjectZomboid64.exe /F /T', (err) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ success: true, message: 'Procesos de Project Zomboid terminados limpiamente.' }));
           });
