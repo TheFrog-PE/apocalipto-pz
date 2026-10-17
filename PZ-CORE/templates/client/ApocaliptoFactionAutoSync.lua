@@ -62,7 +62,10 @@ local function syncApocaliptoFaction(player)
                     if col and ColorInfo then
                         fact:setTagColor(ColorInfo.new(col.r, col.g, col.b, 1))
                     end
-                    Faction.getFactions():add(fact)
+                    local factions = Faction.getFactions()
+                    if factions ~= nil then
+                        factions:add(fact)
+                    end
                 end
             end)
         else

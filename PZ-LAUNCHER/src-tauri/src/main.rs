@@ -160,7 +160,7 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 // Inyectar el hook de salto de menú y conexión directa en MainScreen.lua
                 let main_screen_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MainScreen.lua");
                 if let Ok(content) = fs::read_to_string(&main_screen_path) {
-                    let new_hook_sig = "ConnectToServer.instance:connect(MainScreen.instance.bottomPanel, \"Apocalipto PZ\"";
+                    let new_hook_sig = "parseIni(\"apocalipto_session.ini\")";
 
                     let needs_inject = !content.contains("apocalipto_connect.ini");
                     let needs_upgrade = content.contains("apocalipto_connect.ini")
@@ -182,46 +182,50 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                         let target_anchor = "local argsServer = getServerAddressFromArgs();";
                         if let Some(pos) = working_content.find(target_anchor) {
                             let lua_hook = r##"
-        -- [APOCALIPTO PZ] TICKET DE SESION AUTO-JOIN DIRECTO & PREVENCIÓN DE CONGELAMIENTO
+        -- [APOCALIPTO PZ] TICKET DE SESION AUTO-JOIN DIRECTO & PREVENCIÓN DE CONGELAMIENTO (RESILIENTE)
         local okTicket, ticketUsed = pcall(function()
-            local reader = getFileReader("apocalipto_connect.ini", false)
-            if not reader then return false end
-            local params = {}
-            while true do
-                local line = reader:readLine()
-                if line == nil then break end
-                line = string.trim(line)
-                if line ~= "" and string.sub(line, 1, 1) ~= "#" then
-                    local sep = string.find(line, "=")
-                    if sep then
-                        local k = string.trim(string.sub(line, 1, sep - 1))
-                        local v = string.trim(string.sub(line, sep + 1))
-                        params[k] = v
+            local function parseIni(fileName)
+                local reader = getFileReader(fileName, false)
+                if not reader then return nil end
+                local params = {}
+                while true do
+                    local line = reader:readLine()
+                    if line == nil then break end
+                    line = string.trim(line)
+                    if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+                        local sep = string.find(line, "=")
+                        if sep then
+                            local k = string.trim(string.sub(line, 1, sep - 1))
+                            local v = string.trim(string.sub(line, sep + 1))
+                            params[k] = v
+                        end
                     end
                 end
+                reader:close()
+                if params.ip and params.user and string.len(params.user) > 0 then
+                    return params
+                end
+                return nil
             end
-            reader:close()
+
+            -- 1. Intentar apocalipto_connect.ini, con fallback inmediato a apocalipto_session.ini
+            local params = parseIni("apocalipto_connect.ini") or parseIni("apocalipto_session.ini")
+            if not params then return false end
+
             _G.ApocaliptoSession = params
 
-            if params.ip and params.port and params.user and string.len(params.user) > 0 then
-                -- Limpiar el ticket (overwrite=true trunca el archivo) para que el próximo inicio de PZ no lo reutilice
-                local writer = getFileWriter("apocalipto_connect.ini", true, false)
-                if writer then writer:close() end
+            local ip = params.ip
+            local port = tostring(params.port or "63855")
+            local pwd = params.password or "12345"
 
-                local ip = params.ip
-                local port = tostring(params.port)
-                local pwd = params.password or "12345"
-
-                if MainScreen.instance.animPopup ~= nil then
-                    MainScreen.instance.animPopup:removeFromUIManager()
-                end
-                MainScreen.instance.bottomPanel:setVisible(false)
-
-                -- Conectar directamente a través de ConnectToServer sin popups ni Steam Relay
-                ConnectToServer.instance:connect(MainScreen.instance.bottomPanel, "Apocalipto PZ", params.user, pwd, ip, "", port, "", false, true, 1)
-                return true
+            if MainScreen.instance.animPopup ~= nil then
+                MainScreen.instance.animPopup:removeFromUIManager()
             end
-            return false
+            MainScreen.instance.bottomPanel:setVisible(false)
+
+            -- Conectar directamente a través de ConnectToServer sin popups ni Steam Relay
+            ConnectToServer.instance:connect(MainScreen.instance.bottomPanel, "Apocalipto PZ", params.user, pwd, ip, "", port, "", false, true, 1)
+            return true
         end)
         if okTicket and ticketUsed then
             return
@@ -468,7 +472,10 @@ local function syncApocaliptoFaction(player)
                     if col and ColorInfo then
                         fact:setTagColor(ColorInfo.new(col.r, col.g, col.b, 1))
                     end
-                    Faction.getFactions():add(fact)
+                    local factions = Faction.getFactions()
+                    if factions ~= nil then
+                        factions:add(fact)
+                    end
                 end
             end)
         else
@@ -538,10 +545,8 @@ end)
                     }
                 }
 
-                let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
-                    .args(["-connect", &connect_arg, "-password", "12345"])
                     .spawn();
 
                 if spawn_res.is_ok() {

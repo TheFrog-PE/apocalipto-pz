@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.3",
-  "minRequiredVersion": "1.1.3",
+  "latestVersion": "1.1.4",
+  "minRequiredVersion": "1.1.4",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "fb1864001e73a60374f1e675eb20c2cc989cd0bd82103acfc706da219e8e4ea9",
-  "changelog": "Versión 1.1.3: Corrección crítica del puerto de conexión RakNet UDP (63855 -> 16262) para enlaces directos por Internet sin rechazo ni desconexión.",
-  "updatedAt": "2026-10-17T11:31:00.000Z"
+  "sha256": "f42a8187aa28b5ea995473030aa9a798578537b57429c88b4db93967c0679355",
+  "changelog": "Versión 1.1.4: Resiliencia de sesión garantizada (doble lectura sin truncamiento de connect.ini), auto-whitelist en SQLite/RCON, corrección de NullPointerException en facciones y ZIP de descarga actualizado.",
+  "updatedAt": "2026-10-17T13:02:00.000Z"
 }

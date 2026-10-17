@@ -731,6 +731,10 @@ export class SwarmBridgeServer {
           approvedNodes[nodeId] = ticket;
           this._atomicWrite(this.approvedNodesFile, approvedNodes);
 
+          // Sincronizar automáticamente con whitelist de Project Zomboid (SQLite + RCON)
+          const playerName = applicant.username || `Superviviente_${(applicant.faction || 'DOE').toUpperCase()}_${nodeId.replace('node_', '').substring(0, 4).toUpperCase()}`;
+          this._syncUserToPzWhitelist(playerName, '12345', applicant.steamId);
+
           // Actualizar estado en lista de aspirantes
           applicant.status = 'APPROVED';
           this._atomicWrite(this.applicantsFile, applicants.filter(a => a.nodeId !== nodeId));
@@ -1235,6 +1239,10 @@ export class SwarmBridgeServer {
             approvedNodes[nodeId].payload.factionId = faction.toLowerCase();
             this._atomicWrite(this.approvedNodesFile, approvedNodes);
           }
+
+          // Sincronizar siempre al jugador en la whitelist de PZ (SQLite + RCON)
+          const launchSteamId = approvedNodes[nodeId]?.payload?.steamId || null;
+          this._syncUserToPzWhitelist(userToConnect, body.password || '12345', launchSteamId);
 
           // Solo iniciar proxy UDP local si el targetHost es REMOTO (otro nodo del enjambre)
           // Si es 127.0.0.1 / localhost, el cliente PZ se conecta directamente al servidor local sin intermediarios
@@ -1814,5 +1822,26 @@ export class SwarmBridgeServer {
       console.warn('[PERF_OPT] Error optimizando options.ini:', err.message);
     }
   }
+
+  _syncUserToPzWhitelist(username, password = '12345', steamId = null) {
+    if (!username) return;
+    try {
+      const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
+      if (fs.existsSync(serverDbPath)) {
+        const cleanUser = username.replace(/['"\\]/g, '');
+        const cleanPwd = (password || '12345').replace(/['"\\]/g, '');
+        const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
+        const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('SELECT id FROM whitelist WHERE username = ? OR (steamid IS NOT NULL AND steamid != \\'\\' AND steamid = ?)', ('${cleanUser}', '${cleanSteam}')); r = cur.fetchone(); (cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${cleanPwd}', '${cleanSteam}', r[0])) if r else cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid, displayName) VALUES (\\'ApocaliptoPZ\\', ?, ?, 2, 1, ?, ?)', ('${cleanUser}', '${cleanPwd}', '${cleanSteam}', '${cleanUser}'))); conn.commit(); conn.close()"`;
+        exec(pyCmd, () => {});
+      }
+      if (this.rcon && typeof this.rcon.execute === 'function') {
+        this.rcon.execute(`adduser "${username.replace(/['"\\]/g, '')}" "${(password || '12345').replace(/['"\\]/g, '')}"`).catch(() => {});
+      }
+      console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON.`);
+    } catch (e) {
+      console.warn('[WHITELIST_SYNC] Warning sincronizando whitelist de PZ:', e.message);
+    }
+  }
 }
+
 

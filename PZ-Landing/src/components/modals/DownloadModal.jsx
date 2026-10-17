@@ -116,14 +116,24 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
                     Instalador oficial para Windows 10/11. Aplicación nativa de escritorio con motor de Enjambre P2P y aceleración de red.
                   </p>
                 </div>
-                <a
-                  href="/downloads/ApocaliptoPZ-Setup.exe"
-                  download="ApocaliptoPZ-Setup.exe"
-                  className="mt-4 w-full py-3 bg-zinc-800 hover:bg-emerald-500 text-zinc-200 hover:text-black font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                >
-                  <Download className="w-4 h-4 stroke-[2.5]" />
-                  <span>DESCARGAR .EXE (WINDOWS)</span>
-                </a>
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                  <a
+                    href="/downloads/ApocaliptoPZ-Setup.exe"
+                    download="ApocaliptoPZ-Setup.exe"
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-emerald-500 text-zinc-200 hover:text-black font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
+                  >
+                    <Download className="w-4 h-4 stroke-[2.5]" />
+                    <span>DESCARGAR .EXE</span>
+                  </a>
+                  <a
+                    href="/downloads/ApocaliptoPZ-Setup.zip"
+                    download="ApocaliptoPZ-Setup.zip"
+                    className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
+                  >
+                    <Download className="w-4 h-4 stroke-[2.5]" />
+                    <span>DESCARGAR .ZIP</span>
+                  </a>
+                </div>
               </div>
             </div>
 
