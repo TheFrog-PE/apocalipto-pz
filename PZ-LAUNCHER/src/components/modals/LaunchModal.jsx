@@ -177,6 +177,11 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase block">FACCIÓN ASIGNADA</span>
                 <span className="text-xs font-bold text-zinc-100 uppercase">{selectedFactionData.name}</span>
+                {selectedFactionData.spawnLocation && (
+                  <span className="text-[10px] text-emerald-400 font-mono block mt-0.5">
+                    📍 Spawn: {selectedFactionData.spawnLocation}
+                  </span>
+                )}
               </div>
               <span className={`px-3 py-0.5 text-xs font-bold border rounded-full ${selectedFactionData.accentColor}`}>
                 {selectedFactionData.tag}

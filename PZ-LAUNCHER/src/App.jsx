@@ -128,11 +128,20 @@ export default function App() {
   // Sincronizar conteo de facciones en vivo y estado de aprobación del nodo local
   useEffect(() => {
     const fetchStats = async () => {
-      const bridgeUrl = getSwarmBridgeUrl();
+      let bridgeUrl = getSwarmBridgeUrl();
       try {
         // 1. Conteo público y anónimo de facciones
-        const res = await fetch(`${bridgeUrl}/api/swarm/stats`);
-        if (res.ok) {
+        let res;
+        try {
+          res = await fetch(`${bridgeUrl}/api/swarm/stats`, { signal: AbortSignal.timeout(3000) });
+        } catch {
+          if (bridgeUrl !== 'http://127.0.0.1:19842') {
+            res = await fetch('http://127.0.0.1:19842/api/swarm/stats', { signal: AbortSignal.timeout(2000) });
+            if (res && res.ok) bridgeUrl = 'http://127.0.0.1:19842';
+          }
+        }
+
+        if (res && res.ok) {
           const data = await res.json();
           if (data && data.counts) {
             setFactions(prev => {
@@ -149,8 +158,16 @@ export default function App() {
         // 2. Consulta segura y aislada del ticket propio de este nodo (cero filtración de terceros)
         const localId = getOrCreateLocalIdentity();
         if (localId?.nodeId) {
-          const statusRes = await fetch(`${bridgeUrl}/api/node/status/${localId.nodeId}`);
-          if (statusRes.ok) {
+          let statusRes;
+          try {
+            statusRes = await fetch(`${bridgeUrl}/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(3000) });
+          } catch {
+            if (bridgeUrl !== 'http://127.0.0.1:19842') {
+              statusRes = await fetch(`http://127.0.0.1:19842/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(2000) });
+            }
+          }
+
+          if (statusRes && statusRes.ok) {
             const statusData = await statusRes.json();
             if (statusData.status === 'APPROVED' && statusData.ticket) {
               const fid = (statusData.ticket.payload?.factionId || statusData.ticket.payload?.faction || '').toLowerCase();

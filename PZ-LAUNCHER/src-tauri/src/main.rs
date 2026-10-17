@@ -11,34 +11,43 @@ use sha2::{Digest, Sha256};
 fn launch_steam_game(connect_address: String, username: String, faction: String) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
-        let clean_ip = if connect_address.contains(':') {
-            connect_address.split(':').next().unwrap_or("147.185.221.215")
+        let (raw_host, clean_port) = if let Some((ip, port)) = connect_address.split_once(':') {
+            (ip.trim().to_string(), port.trim().parse::<u16>().unwrap_or(16261))
         } else {
-            "147.185.221.215"
+            (connect_address.trim().to_string(), 16261)
+        };
+
+        // Si el host es el dominio del túnel Playit, resolvemos o usamos su IP directa para evitar fallos de DNS en clientes
+        let clean_ip = if raw_host == "rails-switching.tun.ply.gg" {
+            "147.185.221.215".to_string()
+        } else if raw_host.is_empty() {
+            "127.0.0.1".to_string()
+        } else {
+            raw_host
         };
 
         let clean_user = if username.trim().is_empty() {
-            "Superviviente"
+            "Superviviente".to_string()
         } else {
-            username.trim()
+            username.trim().to_string()
         };
 
         let clean_faction = if faction.trim().is_empty() {
-            "MOK"
+            "MOK".to_string()
         } else {
-            faction.trim()
+            faction.trim().to_string()
         };
+
+        let ini_content = format!(
+            "ip={}\nport={}\nuser={}\npassword=12345\nfaction={}\nspawnRegion={}\nserverName=Apocalipto PZ\n",
+            clean_ip, clean_port, clean_user, clean_faction, clean_faction
+        );
 
         // 1. Inyectar configuración de sesión en %USERPROFILE%/Zomboid del jugador
         if let Some(user_profile) = std::env::var_os("USERPROFILE") {
             let zomboid_dir = PathBuf::from(&user_profile).join("Zomboid");
             let lua_dir = zomboid_dir.join("Lua");
             let _ = fs::create_dir_all(&lua_dir);
-
-            let ini_content = format!(
-                "ip={}\nport=63854\nuser={}\npassword=12345\nfaction={}\nspawnRegion={}\nserverName=Apocalipto PZ\n",
-                clean_ip, clean_user, clean_faction, clean_faction
-            );
 
             let _ = fs::write(zomboid_dir.join("apocalipto_session.ini"), &ini_content);
             let _ = fs::write(lua_dir.join("apocalipto_session.ini"), &ini_content);
@@ -97,14 +106,14 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
                     if let Some(sid) = server_id {
                         let _ = conn.execute(
-                            "UPDATE server SET ip = ?1, port = 63854 WHERE id = ?2",
-                            rusqlite::params![clean_ip, sid],
+                            "UPDATE server SET ip = ?1, port = ?2 WHERE id = ?3",
+                            rusqlite::params![clean_ip, clean_port as i64, sid],
                         );
                     } else {
                         let _ = conn.execute(
                             "INSERT OR IGNORE INTO server (name, ip, port, serverPassword, description)
-                             VALUES ('Apocalipto PZ', ?1, 63854, '', 'Servidor P2P Apocalipto PZ Build 42')",
-                            rusqlite::params![clean_ip],
+                             VALUES ('Apocalipto PZ', ?1, ?2, '', 'Servidor P2P Apocalipto PZ Build 42')",
+                            rusqlite::params![clean_ip, clean_port as i64],
                         );
                         server_id = conn
                             .query_row(
@@ -128,6 +137,11 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                                  VALUES (?1, ?2, '12345', 1, 0, 1)",
                                 rusqlite::params![sid, clean_user],
                             );
+                        } else {
+                            let _ = conn.execute(
+                                "UPDATE account SET password = '12345', isSavePassword = 1, isUseSteamRelay = 0 WHERE serverId = ?1 AND username = ?2",
+                                rusqlite::params![sid, clean_user],
+                            );
                         }
                     }
                 }
@@ -140,26 +154,21 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
         if let Some(pz_exe) = find_pz_executable() {
             if let Some(pz_dir) = pz_exe.parent() {
-                // Inyectar el hook de salto de menú y conexión directa a creación de personaje en MainScreen.lua
+                let _ = fs::write(pz_dir.join("apocalipto_session.ini"), &ini_content);
+                let _ = fs::write(pz_dir.join("apocalipto_connect.ini"), &ini_content);
+
+                // Inyectar el hook de salto de menú y conexión directa en MainScreen.lua
                 let main_screen_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MainScreen.lua");
                 if let Ok(content) = fs::read_to_string(&main_screen_path) {
-                    // Firma del hook viejo (usa ConnectToServer.instance:connect — bug pantalla congelada)
-                    let old_hook_sig = "ConnectToServer.instance:connect(";
-                    // Firma del hook nuevo (usa bootstrapConnectPopup:connect — correcto)
-                    let new_hook_sig = "bootstrapConnectPopup:connect(ip, port, pwd)";
+                    let new_hook_sig = "ConnectToServer.instance:connect(MainScreen.instance.bottomPanel, \"Apocalipto PZ\"";
 
                     let needs_inject = !content.contains("apocalipto_connect.ini");
                     let needs_upgrade = content.contains("apocalipto_connect.ini")
-                        && content.contains(old_hook_sig)
                         && !content.contains(new_hook_sig);
 
                     if needs_inject || needs_upgrade {
                         let working_content = if needs_upgrade {
-                            // Para upgrade: leer el archivo vanilla limpio y reparchar
-                            // El archivo ya está parchado — necesitamos eliminar el hook viejo primero.
-                            // Encontramos el bloque del hook por sus marcadores y lo eliminamos.
                             let hook_start = "        -- [APOCALIPTO PZ] TICKET DE SESION";
-                            let hook_end = "        if okTicket and ticketUsed then\n            return\n        end\n";
                             if let (Some(hs), Some(he)) = (content.find(hook_start), content.find("        if okTicket and ticketUsed then")) {
                                 let end_pos = he + "        if okTicket and ticketUsed then\n            return\n        end\n".len();
                                 format!("{}{}", &content[..hs], &content[end_pos..])
@@ -208,9 +217,8 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 end
                 MainScreen.instance.bottomPanel:setVisible(false)
 
-                -- bootstrapConnectPopup es el método nativo de PZ para conectar desde la pantalla principal
-                -- Mismo mecanismo que usa getServerAddressFromArgs() en PZ vanilla — garantiza UI correcta
-                MainScreen.instance.bootstrapConnectPopup:connect(ip, port, pwd)
+                -- Conectar directamente a través de ConnectToServer sin popups ni Steam Relay
+                ConnectToServer.instance:connect(MainScreen.instance.bottomPanel, "Apocalipto PZ", params.user, pwd, ip, "", port, "", false, true, 1)
                 return true
             end
             return false
@@ -228,40 +236,65 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 // Inyectar y auto-reparar el hook de bypass de spawn por facción en MapSpawnSelect.lua
                 let map_spawn_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("MapSpawnSelect.lua");
                 if let Ok(spawn_content) = fs::read_to_string(&map_spawn_path) {
-                    // 1. Auto-reparación: neutralizar la línea corrupta que provocaba 'end' expected en clientes
                     let cleaned_content = spawn_content
                         .replace("function __UNUSED_ORIGINAL_hasChoices()", "-- [REPAIRED] function __UNUSED_ORIGINAL_hasChoices()")
                         .replace("function __UNUSED_ORIGINAL_hasChoices", "-- [REPAIRED] function __UNUSED_ORIGINAL_hasChoices");
 
-                    // 2. Inyectar o actualizar el hook limpio de spawn forzado al final del archivo
-                    let is_already_clean = cleaned_content.contains("ApocaliptoSpawnInjected");
-                    let final_content = if !is_already_clean {
-                        let spawn_hook = r##"
+                    let base_content = if cleaned_content.contains("ApocaliptoSpawnInjected") {
+                        if let Some(idx) = cleaned_content.find("-- [APOCALIPTO PZ] BYPASS DE SPAWN FORZADO") {
+                            cleaned_content[..idx].trim_end().to_string()
+                        } else {
+                            cleaned_content
+                        }
+                    } else {
+                        cleaned_content
+                    };
 
--- [APOCALIPTO PZ] BYPASS DE SPAWN FORZADO POR FACCION
+                    let spawn_hook = r##"
+
+-- [APOCALIPTO PZ] BYPASS DE SPAWN FORZADO POR FACCION (SOLO EN APOCALIPTO PZ)
 if not _G.ApocaliptoSpawnInjected then
     _G.ApocaliptoSpawnInjected = true
-    local old_hasChoices = MapSpawnSelect.hasChoices
-    MapSpawnSelect.hasChoices = function(self)
-        local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
-        if not targetFaction then
-            local sReader = getFileReader("apocalipto_session.ini", false)
-            if sReader then
+
+    local function getApocaliptoFaction()
+        if _G.ApocaliptoSession and _G.ApocaliptoSession.faction and _G.ApocaliptoSession.faction ~= "" then
+            return _G.ApocaliptoSession.faction
+        end
+        local files = { "apocalipto_session.ini", "apocalipto_connect.ini" }
+        for _, fname in ipairs(files) do
+            local reader = getFileReader(fname, false)
+            if reader then
+                local faction = nil
                 while true do
-                    local sLine = sReader:readLine()
-                    if sLine == nil then break end
-                    sLine = string.trim(sLine)
-                    local sSep = string.find(sLine, "=")
-                    if sSep then
-                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
-                        local sv = string.trim(string.sub(sLine, sSep + 1))
-                        if sk == "faction" then targetFaction = sv break end
+                    local line = reader:readLine()
+                    if line == nil then break end
+                    line = string.trim(line)
+                    local sep = string.find(line, "=")
+                    if sep then
+                        local k = string.trim(string.sub(line, 1, sep - 1))
+                        local v = string.trim(string.sub(line, sep + 1))
+                        if k == "faction" and v ~= "" then
+                            faction = v
+                            break
+                        end
                     end
                 end
-                sReader:close()
+                reader:close()
+                if faction and faction ~= "" then
+                    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+                    _G.ApocaliptoSession.faction = faction
+                    _G.ApocaliptoSession.serverName = "Apocalipto PZ"
+                    return faction
+                end
             end
         end
-        if targetFaction and targetFaction ~= "" then
+        return nil
+    end
+
+    local old_hasChoices = MapSpawnSelect.hasChoices
+    MapSpawnSelect.hasChoices = function(self)
+        local faction = getApocaliptoFaction()
+        if faction then
             return false
         end
         if old_hasChoices then return old_hasChoices(self) end
@@ -271,114 +304,107 @@ if not _G.ApocaliptoSpawnInjected then
 
     local old_useDefault = MapSpawnSelect.useDefaultSpawnRegion
     MapSpawnSelect.useDefaultSpawnRegion = function(self)
-        self.selectedRegion = nil
-        local regions = self:getSpawnRegions()
-        if not regions or #regions == 0 then return end
-
-        local targetFaction = (ApocaliptoSession and ApocaliptoSession.faction) or nil
-        if not targetFaction then
-            local sReader = getFileReader("apocalipto_session.ini", false)
-            if sReader then
-                while true do
-                    local sLine = sReader:readLine()
-                    if sLine == nil then break end
-                    sLine = string.trim(sLine)
-                    local sSep = string.find(sLine, "=")
-                    if sSep then
-                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
-                        local sv = string.trim(string.sub(sLine, sSep + 1))
-                        if sk == "faction" then targetFaction = sv break end
+        local faction = getApocaliptoFaction()
+        if faction then
+            self.selectedRegion = nil
+            local regions = self:getSpawnRegions()
+            if regions and #regions > 0 then
+                local fTag = string.upper(faction)
+                for _, r in ipairs(regions) do
+                    if string.find(string.upper(r.name), fTag) then
+                        self.selectedRegion = r
+                        setSpawnRegion(r.name)
+                        getCore():setSelectedMap(tostring(r.name))
+                        print("[APOCALIPTO PZ] Spawn auto-asignado a territorio de faccion: " .. tostring(r.name))
+                        return self.selectedRegion
                     end
                 end
-                sReader:close()
-            end
-        end
-
-        if targetFaction and targetFaction ~= "" then
-            local fTag = string.upper(targetFaction)
-            for _, r in ipairs(regions) do
-                if string.find(string.upper(r.name), fTag) then
-                    self.selectedRegion = r
-                    setSpawnRegion(r.name)
-                    getCore():setSelectedMap(tostring(r.name))
-                    print("[APOCALIPTO PZ] Spawn auto-asignado a territorio de faccion: " .. tostring(r.name))
-                    return self.selectedRegion
-                end
+                self.selectedRegion = regions[1]
+                setSpawnRegion(self.selectedRegion.name)
+                getCore():setSelectedMap(tostring(self.selectedRegion.name))
+                return self.selectedRegion
             end
         end
 
         if old_useDefault then return old_useDefault(self) end
-        self.selectedRegion = regions[1]
-        setSpawnRegion(self.selectedRegion.name)
-        getCore():setSelectedMap(tostring(self.selectedRegion.name))
-        return self.selectedRegion
+        local regions = self:getSpawnRegions()
+        if regions and #regions > 0 then
+            self.selectedRegion = regions[1]
+            setSpawnRegion(self.selectedRegion.name)
+            getCore():setSelectedMap(tostring(self.selectedRegion.name))
+            return self.selectedRegion
+        end
+    end
+
+    local base_setVisible = MapSpawnSelect.setVisible or ISPanelJoypad.setVisible or ISUIElement.setVisible
+    MapSpawnSelect.setVisible = function(self, visible, joypadData)
+        if visible then
+            local faction = getApocaliptoFaction()
+            if faction then
+                self:useDefaultSpawnRegion()
+                if base_setVisible then base_setVisible(self, false, joypadData) end
+                if MainScreen.instance and MainScreen.instance.charCreationProfession then
+                    MainScreen.instance:setVisible(true)
+                    MainScreen.instance.bottomPanel:setVisible(false)
+                    MainScreen.instance.charCreationProfession.previousScreen = nil
+                    MainScreen.instance.charCreationProfession:setVisible(true, joypadData)
+                end
+                return
+            end
+        end
+        if base_setVisible then base_setVisible(self, visible, joypadData) end
     end
 end
 "##;
-                        format!("{}{}", cleaned_content, spawn_hook)
-                    } else {
-                        cleaned_content
-                    };
-
+                    let final_content = format!("{}\n{}", base_content, spawn_hook);
                     if final_content != spawn_content {
                         let _ = fs::write(&map_spawn_path, final_content);
                     }
                 }
 
-                // Inyectar el hook de auto-relleno de credenciales y conexión directa en ServerConnectPopup.lua
+                // Inyectar hook de auto-conexión directa y bypass de Steam Relay en ServerConnectPopup.lua
                 let server_connect_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("ServerConnectPopup.lua");
                 if let Ok(popup_content) = fs::read_to_string(&server_connect_path) {
-                    if !popup_content.contains("ApocaliptoServerConnectInjected") {
-                        let popup_hook = r##"
+                    let clean_popup = if popup_content.contains("ApocaliptoServerConnectInjected") {
+                        if let Some(idx) = popup_content.find("-- [APOCALIPTO PZ]") {
+                            popup_content[..idx].trim_end().to_string()
+                        } else {
+                            popup_content.clone()
+                        }
+                    } else {
+                        popup_content.clone()
+                    };
 
--- [APOCALIPTO PZ] Auto-completado de credenciales y conexión directa
+                    let popup_hook = r##"
+
+-- [APOCALIPTO PZ] Auto-conexión directa y bypass de credenciales / Steam Relay
 if not _G.ApocaliptoServerConnectInjected then
     _G.ApocaliptoServerConnectInjected = true
     local old_setServer = ServerConnectPopup.setServer
     ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
         if old_setServer then old_setServer(self, ip, port, passwordStr) end
-
-        local sUser = (ApocaliptoSession and ApocaliptoSession.user)
-        local sPwd = (ApocaliptoSession and ApocaliptoSession.password) or "12345"
-        if not sUser or sUser == "" then
-            local sReader = getFileReader("apocalipto_session.ini", false)
-            if sReader then
-                while true do
-                    local sLine = sReader:readLine()
-                    if sLine == nil then break end
-                    sLine = string.trim(sLine)
-                    local sSep = string.find(sLine, "=")
-                    if sSep then
-                        local sk = string.trim(string.sub(sLine, 1, sSep - 1))
-                        local sv = string.trim(string.sub(sLine, sSep + 1))
-                        if sk == "user" then sUser = sv end
-                        if sk == "password" then sPwd = sv end
-                    end
-                end
-                sReader:close()
-            end
-        end
-
-        if sUser and sUser ~= "" then
-            self.usernameEntry:setText(sUser)
-            self.passwordEntry:setText(sPwd)
+        if _G.ApocaliptoSession and _G.ApocaliptoSession.serverName == "Apocalipto PZ" and _G.ApocaliptoSession.user and not _G.ApocaliptoSession.connected then
+            _G.ApocaliptoSession.connected = true
+            local session = _G.ApocaliptoSession
+            self.usernameEntry:setText(session.user)
+            self.passwordEntry:setText(session.password or "12345")
             self.serverPasswordEntry:setText("")
-
-            -- Ocultar ventana emergente e ingresar directamente sin requerir interacción del jugador
+            if self.connectTypeEntry and self.connectTypeEntry.selected then
+                self.connectTypeEntry.selected[1] = false
+            end
             self:setVisible(false)
-            local localIP = ""
-            local useSteamRelay = false
-            ConnectToServer.instance:connect(self, "Apocalipto PZ", sUser, sPwd, ip, localIP, port, "", useSteamRelay, true, 1)
+            ConnectToServer.instance:connect(self, "Apocalipto PZ", session.user, session.password or "12345", ip, "", tostring(port), "", false, true, 1)
         end
     end
 end
 "##;
-                        let patched_popup = format!("{}{}", popup_content, popup_hook);
-                        let _ = fs::write(&server_connect_path, patched_popup);
+                    let final_popup = format!("{}\n{}", clean_popup, popup_hook);
+                    if final_popup != popup_content {
+                        let _ = fs::write(&server_connect_path, final_popup);
                     }
                 }
 
-                let connect_arg = format!("{}:63854", clean_ip);
+                let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
                     .args(["-connect", &connect_arg, "-password", "12345"])
@@ -390,8 +416,23 @@ end
             }
         }
 
-        // Fallback: ordenar a Steam ejecutar Project Zomboid Build 42 (App ID 108600) con argumentos de conexión
-        let steam_app_uri = format!("steam://run/108600//-connect%20{}:63854%20-password%2012345", clean_ip);
+        // Fallback 1: Si encontramos steam.exe, lanzar con -applaunch 108600 (evita el modal de opciones de inicio de Steam)
+        if let Some(steam_dir) = get_steam_path_from_registry() {
+            let steam_exe = PathBuf::from(steam_dir).join("steam.exe");
+            if steam_exe.exists() {
+                let connect_arg = format!("{}:{}", clean_ip, clean_port);
+                let res = std::process::Command::new(&steam_exe)
+                    .args(["-applaunch", "108600", "-connect", &connect_arg, "-password", "12345"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn();
+                if res.is_ok() {
+                    return Ok("Project Zomboid iniciado vía Steam -applaunch 108600".into());
+                }
+            }
+        }
+
+        // Fallback 2: Protocolo Steam URI
+        let steam_app_uri = format!("steam://run/108600//-connect%20{}:{}%20-password%2012345", clean_ip, clean_port);
         std::process::Command::new("rundll32.exe")
             .args(["url.dll,FileProtocolHandler", &steam_app_uri])
             .creation_flags(CREATE_NO_WINDOW)

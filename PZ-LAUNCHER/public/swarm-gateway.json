@@ -1,15 +1,15 @@
 {
-  "gatewayUrl": "https://des-fashion-cave-asset.trycloudflare.com",
+  "gatewayUrl": "https://tub-wondering-social-swap.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.9",
-  "minRequiredVersion": "1.0.9",
+  "latestVersion": "1.1.0",
+  "minRequiredVersion": "1.1.0",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "e639128a64ecc8935dbe7ce2e6d8e30972fe34c4fc4525b5d45968e09a78c49e",
-  "changelog": "Versión 1.0.9 Oficial: Sincronización en tiempo real de facciones con Bento OS, expulsión de Whitelist y enlace local prioritario.",
-  "updatedAt": "2026-10-15T15:31:00.000Z"
+  "sha256": "aca60fd8ab89c72ad8f89e5b14b9b93002eb09eaed9338f6bb2d6e4ef24d27e8",
+  "changelog": "Versión 1.1.0: Despliegue forzado automático por territorio de facción (eliminación de pantalla MapSpawnSelect), indicación de ubicaciones de aparición en Launcher y conexión optimizada.",
+  "updatedAt": "2026-10-17T01:42:00.000Z"
 }

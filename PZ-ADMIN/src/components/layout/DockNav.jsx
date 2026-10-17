@@ -5,17 +5,17 @@ export default function DockNav({ expandedModule, setExpandedModule, applicantsC
   if (!expandedModule) return null;
 
   return (
-    <nav className="flex items-center justify-between gap-2 bg-[#121417]/95 backdrop-blur-md border border-zinc-800/90 rounded-xl p-2 shadow-2xl overflow-x-auto font-mono text-xs">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-zinc-500 uppercase px-2 flex items-center gap-1.5">
+    <nav className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[#121417]/95 backdrop-blur-md border border-zinc-800/90 rounded-xl p-2 shadow-2xl font-mono text-xs">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
+        <span className="text-[10px] text-zinc-500 uppercase px-1.5 flex items-center gap-1 shrink-0">
           <LayoutGrid className="w-3 h-3 text-zinc-500" />
-          <span>MÓDULOS DE COMANDO:</span>
+          <span className="hidden sm:inline">MÓDULOS:</span>
         </span>
 
         {/* Radio Knox */}
         <button
           onClick={() => setExpandedModule('chat')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'chat'
               ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
@@ -29,7 +29,7 @@ export default function DockNav({ expandedModule, setExpandedModule, applicantsC
         {/* Whitelist (Con estilo ámbar táctico oscuro) */}
         <button
           onClick={() => setExpandedModule('whitelist')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'whitelist'
               ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.35)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
@@ -38,21 +38,21 @@ export default function DockNav({ expandedModule, setExpandedModule, applicantsC
           <User className="w-3.5 h-3.5 text-amber-400" />
           <span>Whitelist</span>
           <span className="px-1.5 py-0.2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[9px] rounded font-bold">
-            ({applicantsCount} PENDIENTES)
+            ({applicantsCount})
           </span>
         </button>
 
         {/* Facciones */}
         <button
           onClick={() => setExpandedModule('factions')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'factions'
               ? 'bg-emerald-950/80 border-emerald-500/70 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Balanza 4 Facciones</span>
+          <span>Facciones</span>
           <span className="px-1.5 py-0.2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] rounded font-bold">
             EN FOCO
           </span>
@@ -61,23 +61,23 @@ export default function DockNav({ expandedModule, setExpandedModule, applicantsC
         {/* RCON */}
         <button
           onClick={() => setExpandedModule('rcon')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'rcon'
               ? 'bg-red-700 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
           }`}
         >
           <Terminal className="w-3.5 h-3.5 text-red-500" />
-          <span>Asistente RCON</span>
+          <span>RCON</span>
           <span className="px-1.5 py-0.2 bg-zinc-800 text-zinc-400 text-[9px] rounded font-bold">
-            ({totalOccupied} JUGADORES)
+            ({totalOccupied})
           </span>
         </button>
 
         {/* Save-Chain Explorer */}
         <button
           onClick={() => setExpandedModule('blockchain')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'blockchain'
               ? 'bg-cyan-950/80 border-cyan-500/80 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
@@ -86,28 +86,28 @@ export default function DockNav({ expandedModule, setExpandedModule, applicantsC
           <Layers className="w-3.5 h-3.5 text-cyan-400" />
           <span>Save-Chain</span>
           <span className="px-1.5 py-0.2 bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 text-[9px] rounded font-bold">
-            #1 [SYNC]
+            #1
           </span>
         </button>
 
         {/* Arsenal de Mods (Steam Workshop) */}
         <button
           onClick={() => setExpandedModule('mods')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             expandedModule === 'mods'
               ? 'bg-cyan-950/80 border-cyan-500/80 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]'
               : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
           }`}
         >
           <Package className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Taller Mods</span>
+          <span>Mods</span>
         </button>
       </div>
 
       {/* Botón Restaurar Bento */}
       <button
         onClick={() => setExpandedModule(null)}
-        className="px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 border bg-amber-500 hover:bg-amber-400 text-black border-amber-500 shadow transition-all cursor-pointer"
+        className="px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider flex items-center justify-center gap-2 border bg-amber-500 hover:bg-amber-400 text-black border-amber-500 shadow transition-all cursor-pointer shrink-0"
       >
         <LayoutGrid className="w-3.5 h-3.5" />
         <span>VISTA BENTO</span>

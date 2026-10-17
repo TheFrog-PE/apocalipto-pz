@@ -1,4 +1,4 @@
-﻿import doeImg from '../assets/doe-pz-facciones.webp';
+import doeImg from '../assets/doe-pz-facciones.webp';
 import mokImg from '../assets/mok-pz-facciones.webp';
 import ktoImg from '../assets/kto-pz-facciones.webp';
 import rivImg from '../assets/riv-pz-facciones.webp';
@@ -8,6 +8,8 @@ export const FACTIONS = [
     id: 'doe',
     tag: 'DOE',
     name: 'DIVISIÓN DE OPERACIONES ESPECIALES',
+    spawnLocation: 'March Ridge (Bastión Militar)',
+    spawnZone: 'March Ridge',
     description: 'RESTOS DEL GOBIERNO; IMPONEN LEY MARCIAL Y ORDEN A SANGRE Y FUEGO EN SU BASTIÓN.',
     image: doeImg,
     imagePosition: 'object-[center_32%]',
@@ -26,6 +28,8 @@ export const FACTIONS = [
     id: 'mok',
     tag: 'MOK',
     name: 'MERODEADORES OFENSIVOS KINÉTICOS',
+    spawnLocation: 'Muldraugh Sur (Merodeadores Kinéticos)',
+    spawnZone: 'Muldraugh Sur',
     description: 'EL CRIMEN ORGANIZADO SOLO MUTÓ, UN GRUPO DE EXTORSIONADORES, ASESINOS Y DELINCUENTES.',
     image: mokImg,
     imagePosition: 'object-[center_30%]',
@@ -44,6 +48,8 @@ export const FACTIONS = [
     id: 'kto',
     tag: 'KTO',
     name: 'KNOX TESTAMENTO OSCURO',
+    spawnLocation: 'Fallas Lake (Knox Testamento Oscuro)',
+    spawnZone: 'Fallas Lake',
     description: 'CULTO MACABRO QUE VENERA EL METAL Y OPERA DESDE LAS SOMBRAS DE LA ZONA CERO.',
     image: ktoImg,
     imagePosition: 'object-[center_34%]',
@@ -62,6 +68,8 @@ export const FACTIONS = [
     id: 'riv',
     tag: 'RIV',
     name: 'RESISTENCIA INDIE VECINAL',
+    spawnLocation: 'Riverside (Resistencia Indie Vecinal)',
+    spawnZone: 'Riverside',
     description: 'UN GRUPO DE VECINOS UNIFICADOS SOBREVIVEN A LAS VIOLENTAS CALLES MUERTAS.',
     image: rivImg,
     imagePosition: 'object-[center_30%]',

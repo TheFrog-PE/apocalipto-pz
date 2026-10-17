@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, Users, Lock, CheckCircle2, Play, User, Zap } from 'lucide-react';
+import { Download, Users, Lock, CheckCircle2, Play, User, Zap, MapPin } from 'lucide-react';
 
 export default function FactionsTab({ 
   factions, 
@@ -116,6 +116,17 @@ export default function FactionsTab({
                   }`}>
                     {faction.name}
                   </h3>
+
+                  {faction.spawnLocation && (
+                    <div className="flex items-center gap-1.5 mb-2.5 px-2 py-1 rounded bg-black/60 border border-zinc-800 text-[10px] font-mono">
+                      <MapPin className="w-3 h-3 text-red-400 shrink-0" />
+                      <span className="text-zinc-500 font-bold">SPAWN:</span>
+                      <span className={`font-semibold truncate ${isLockedOther ? 'text-zinc-500' : 'text-zinc-200'}`}>
+                        {faction.spawnLocation}
+                      </span>
+                    </div>
+                  )}
+
                   <p className={`text-[11px] leading-tight uppercase font-mono line-clamp-3 transition-colors ${
                     isLockedOther ? 'text-zinc-600' : 'text-zinc-400 group-hover:text-zinc-300'
                   }`}>
@@ -182,6 +193,15 @@ export default function FactionsTab({
           Tu alias visible en el servidor. Si se deja en blanco, se usará el tag por defecto.
         </p>
       </div>
+
+      {/* Indicador de Zona de Aparición de la Facción seleccionada */}
+      {currentFaction?.spawnLocation && (
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-black/70 border border-zinc-800 rounded-full font-mono text-xs shadow-inner mb-2">
+          <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
+          <span className="text-zinc-500 font-bold uppercase tracking-wider">ZONA DE APARICIÓN FORZADA:</span>
+          <span className="text-emerald-400 font-bold tracking-wide">{currentFaction.spawnLocation}</span>
+        </div>
+      )}
 
       {/* Botón Principal de Lanzamiento / Actualización */}
       <div className="flex flex-col sm:flex-row items-center gap-3">

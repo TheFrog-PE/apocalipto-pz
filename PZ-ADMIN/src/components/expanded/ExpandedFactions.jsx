@@ -27,7 +27,8 @@ export default function ExpandedFactions({
   handleSaveChanges,
   handleRevert,
   setExpandedModule,
-  onTriggerAlert
+  onTriggerAlert,
+  onOpenFactionMembers
 }) {
   return (
     <div className="flex-1 bg-[#131518]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between shadow-2xl gap-4 font-mono text-xs">
@@ -214,6 +215,21 @@ export default function ExpandedFactions({
                 <span>{f.closed ? '[ CERRADO ]' : '[ RECLUTANDO ]'}</span>
               </button>
             </div>
+
+            {/* Botón Ver Miembros */}
+            <button
+              onClick={() => f.current > 0 && onOpenFactionMembers && onOpenFactionMembers(f.id)}
+              disabled={f.current === 0}
+              className={`w-full py-1.5 px-3 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                f.current > 0
+                  ? 'bg-cyan-950/80 hover:bg-cyan-900 border-cyan-500/60 text-cyan-300 hover:text-white shadow-[0_0_12px_rgba(6,182,212,0.35)] cursor-pointer'
+                  : 'bg-zinc-900/40 border-zinc-800/80 text-zinc-600 cursor-not-allowed opacity-50'
+              }`}
+              title={f.current > 0 ? `Ver los ${f.current} miembros de ${f.name}` : 'Esta facción no tiene miembros registrados'}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>{f.current > 0 ? `VER MIEMBROS (${f.current})` : 'SIN MIEMBROS'}</span>
+            </button>
 
           </div>
         ))}

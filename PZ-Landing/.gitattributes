@@ -1,0 +1,5 @@
+# Evitar compresion delta en archivos binarios para prevenir errores en servidores Git
+*.exe binary -delta
+*.ico binary -delta
+*.png binary -delta
+*.webp binary -delta

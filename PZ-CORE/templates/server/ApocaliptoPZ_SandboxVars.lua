@@ -372,7 +372,7 @@ SandboxVars = {
     -- 6 = Muy frecuentemente
     AnnotatedMapChance = 4,
     -- Añade puntos gratis durante la creación del personaje. Mínimo=-100 Máximo=100 Por defecto=0
-    CharacterFreePoints = 0,
+    CharacterFreePoints = 6,
     -- Proporciona a las construcciones creadas por los jugadores puntos de impacto adicionales para que sean más resistentes al daño de los zombis. Por defecto=Normal
     -- 1 = Muy bajo
     -- 2 = Bajo

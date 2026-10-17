@@ -76,7 +76,7 @@ export default function Header({ activeTab, setActiveTab, onOpenRules, onlineCou
           title={`Enlace al Enjambre: ${gatewayUrl}`}
         >
           <span className="text-[11px] font-semibold">[ {onlineCount} ENJAMBRE ]</span>
-          <Radio className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+          <Radio className={`w-3.5 h-3.5 animate-pulse ${onlineCount > 0 ? 'text-emerald-400' : 'text-amber-500'}`} />
         </div>
         <button
           onClick={onOpenRules}

@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.0.10",
-  "minRequiredVersion": "1.0.10",
+  "latestVersion": "1.1.0",
+  "minRequiredVersion": "1.1.0",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "5a39aa47766d4cdf071c325ff53afab2488780ff07789de7f9da9a74c538839f",
-  "changelog": "Versión 1.0.10 Oficial: Lanzamiento directo sin ventanas emergentes de Steam, conexión directa al mundo y bypass de Steam Relay.",
-  "updatedAt": "2026-10-17T01:10:26.777Z"
+  "sha256": "aca60fd8ab89c72ad8f89e5b14b9b93002eb09eaed9338f6bb2d6e4ef24d27e8",
+  "changelog": "Versión 1.1.0: Despliegue forzado automático por territorio de facción (eliminación de pantalla MapSpawnSelect), indicación de ubicaciones de aparición en Launcher y conexión optimizada.",
+  "updatedAt": "2026-10-17T01:42:00.000Z"
 }

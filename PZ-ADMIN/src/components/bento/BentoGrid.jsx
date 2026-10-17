@@ -7,6 +7,7 @@ import {
   Lock, 
   Unlock, 
   User, 
+  Users,
   ShieldAlert,
   RotateCcw
 } from 'lucide-react';
@@ -39,7 +40,8 @@ export default function BentoGrid({
   setBroadcastMessage,
   // Handlers
   setExpandedModule,
-  onTriggerAlert
+  onTriggerAlert,
+  onOpenFactionMembers
 }) {
   const totalOccupied = factions.reduce((acc, f) => acc + (f.current || 0), 0);
 
@@ -52,10 +54,10 @@ export default function BentoGrid({
         {/* ========================================================================= */}
         <div className="lg:col-span-7 bg-[#131518]/95 backdrop-blur-md border border-zinc-800/90 rounded-2xl flex flex-col justify-between shadow-xl overflow-hidden hover:border-zinc-700/80 transition-all">
           <div>
-            <div className="px-4 py-2.5 bg-[#171a1e] border-b border-zinc-800 flex items-center justify-between">
+            <div className="px-3.5 sm:px-4 py-2.5 bg-[#171a1e] border-b border-zinc-800 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 text-emerald-400">
-                <span className="font-bold">[ MOD-01 // RADIO CHAT ]</span>
-                <span className="text-zinc-200">FRECUENCIA KNOX 91.4 MHZ</span>
+                <span className="font-bold text-[11px] sm:text-xs">[ MOD-01 // RADIO CHAT ]</span>
+                <span className="text-zinc-200 text-[10px] sm:text-xs hidden sm:inline">FRECUENCIA KNOX 91.4 MHZ</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
               <div className="flex items-center gap-3 text-zinc-500">
@@ -70,13 +72,13 @@ export default function BentoGrid({
               </div>
             </div>
 
-            <div className="px-4 py-1.5 bg-[#101214] border-b border-zinc-900 flex items-center justify-between">
-              <div className="flex gap-2">
+            <div className="px-3 sm:px-4 py-1.5 bg-[#101214] border-b border-zinc-900 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+              <div className="flex gap-1.5 sm:gap-2 shrink-0">
                 {['TODOS', 'RADIO 91.4', 'LOCAL', 'COMBATE'].map((f) => (
                   <button
                     key={f}
                     onClick={() => setChatFilter(f)}
-                    className={`px-2.5 py-0.5 text-[10px] rounded-md border transition-colors cursor-pointer ${
+                    className={`px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] rounded-md border transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                       chatFilter === f 
                         ? 'bg-zinc-800 text-white border-zinc-600 font-bold' 
                         : 'text-zinc-500 border-transparent hover:text-zinc-300'
@@ -86,12 +88,12 @@ export default function BentoGrid({
                   </button>
                 ))}
               </div>
-              <span className="text-[10px] text-zinc-600">CRIPTO-SYNC</span>
+              <span className="text-[10px] text-zinc-600 shrink-0 hidden sm:inline">CRIPTO-SYNC</span>
             </div>
 
-            <div className="p-4 space-y-2.5 max-h-[220px] overflow-y-auto">
+            <div className="p-3 sm:p-4 space-y-2.5 max-h-[220px] overflow-y-auto">
               {messages.map((m) => (
-                <div key={m.id} className="leading-relaxed hover:bg-zinc-900/40 p-1 rounded transition-colors text-[11px]">
+                <div key={m.id} className="leading-relaxed hover:bg-zinc-900/40 p-1 rounded transition-colors text-[10px] sm:text-[11px]">
                   <span className="text-zinc-600 mr-2">[{m.time}]</span>
                   <span className={`px-1.5 py-0.5 mr-2 text-[9px] font-bold rounded ${
                     m.type === 'radio' ? 'bg-blue-950/60 text-blue-400 border border-blue-800/60' :
@@ -108,15 +110,15 @@ export default function BentoGrid({
             </div>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="p-3 border-t border-zinc-800 bg-[#171a1e] flex gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="p-2.5 sm:p-3 border-t border-zinc-800 bg-[#171a1e] flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="Transmitir por Radio Knox 91.4 MHz (Enter para enviar)..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              className="flex-1 bg-[#0f1113] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-amber-500 transition-colors"
+              className="flex-1 bg-[#0f1113] border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-amber-500 transition-colors min-w-0"
             />
-            <button type="submit" className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase rounded-lg flex items-center gap-1.5 transition-all shadow hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer">
+            <button type="submit" className="w-full sm:w-auto px-4 sm:px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase rounded-lg flex items-center justify-center gap-1.5 transition-all shadow hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer shrink-0">
               <Send className="w-3 h-3 stroke-[2.5]" />
               <span>TRANSMITIR</span>
             </button>
@@ -128,10 +130,10 @@ export default function BentoGrid({
         {/* ========================================================================= */}
         <div className="lg:col-span-5 bg-[#131518]/95 backdrop-blur-md border border-zinc-800/90 rounded-2xl flex flex-col justify-between shadow-xl overflow-hidden hover:border-zinc-700/80 transition-all">
           <div>
-            <div className="px-4 py-2.5 bg-[#171a1e] border-b border-zinc-800 flex items-center justify-between">
+            <div className="px-3.5 sm:px-4 py-2.5 bg-[#171a1e] border-b border-zinc-800 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 text-amber-400">
-                <span className="font-bold">[ MOD-02 // WHITELIST ]</span>
-                <span className="text-zinc-200">ASPIRANTES &amp; AUDITORÍA</span>
+                <span className="font-bold text-[11px] sm:text-xs">[ MOD-02 // WHITELIST ]</span>
+                <span className="text-zinc-200 text-[10px] sm:text-xs">ASPIRANTES</span>
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               </div>
               <div className="flex items-center gap-2">
@@ -142,10 +144,10 @@ export default function BentoGrid({
                     title="Reiniciar todas las solicitudes y tickets de prueba a cero"
                   >
                     <RotateCcw className="w-2.5 h-2.5" />
-                    <span>RESET PRUEBAS</span>
+                    <span className="hidden sm:inline">RESET</span>
                   </button>
                 )}
-                <span className="text-[10px] text-amber-400/80">CRIPTO DPoH</span>
+                <span className="text-[10px] text-amber-400/80 hidden sm:inline">CRIPTO DPoH</span>
                 <button 
                   onClick={() => setExpandedModule('whitelist')} 
                   className="text-zinc-500 hover:text-amber-400 transition-colors cursor-pointer"
@@ -156,12 +158,12 @@ export default function BentoGrid({
               </div>
             </div>
 
-            <div className="p-3 space-y-2.5">
+            <div className="p-2.5 sm:p-3 space-y-2.5">
               {applicants.length === 0 ? (
-                <div className="p-8 text-center border border-dashed border-zinc-800/80 rounded-xl text-zinc-500 font-mono text-xs my-2 bg-zinc-950/30">
+                <div className="p-6 sm:p-8 text-center border border-dashed border-zinc-800/80 rounded-xl text-zinc-500 font-mono text-xs my-2 bg-zinc-950/30">
                   <User className="w-8 h-8 mx-auto mb-2 text-zinc-600 opacity-60" />
-                  <div className="font-bold text-zinc-400 uppercase tracking-wider">Sin Solicitudes Pendientes</div>
-                  <div className="text-[10px] text-zinc-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                  <div className="font-bold text-zinc-400 uppercase tracking-wider text-[11px] sm:text-xs">Sin Solicitudes Pendientes</div>
+                  <div className="text-[9px] sm:text-[10px] text-zinc-500 mt-1 max-w-xs mx-auto leading-relaxed">
                     Los jugadores que abran el Launcher aparecerán aquí con su <span className="text-cyan-400">Proof of Hardware</span> y lore en tiempo real.
                   </div>
                 </div>
@@ -178,20 +180,20 @@ export default function BentoGrid({
                     : 'text-blue-400 border-blue-500/40 bg-blue-950/40';
 
                   return (
-                    <div key={app.id} className="p-2.5 bg-[#181a1e] border border-zinc-800/90 rounded-xl flex items-center justify-between shadow-sm hover:border-zinc-700 transition-all">
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                    <div key={app.id} className="p-2.5 bg-[#181a1e] border border-zinc-800/90 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm hover:border-zinc-700 transition-all">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`px-1.5 py-0.5 rounded border text-[9px] font-bold ${fBadgeColor}`}>
                             {fTag}
                           </span>
-                          <span className="font-bold text-cyan-400 text-xs font-mono">{app.callsign || app.id}</span>
+                          <span className="font-bold text-cyan-400 text-xs font-mono truncate">{app.callsign || app.id}</span>
                           <span className="text-zinc-500 text-[10px]">{app.tag}</span>
                         </div>
                         <div className="text-[10px] text-zinc-500 mt-0.5">
                           {app.steamId} • <span className="text-zinc-400">{app.hours || '4c / 16GB'}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 shrink-0 self-end sm:self-center">
                         <button 
                           onClick={() => handleWhitelistAction(app, true)}
                           className="px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all shadow cursor-pointer"
@@ -300,6 +302,21 @@ export default function BentoGrid({
                       <span>{f.closed ? 'Cerrado' : 'Cerrar'}</span>
                     </button>
                   </div>
+
+                  {/* Botón Ver Miembros */}
+                  <button
+                    onClick={() => f.current > 0 && onOpenFactionMembers && onOpenFactionMembers(f.id)}
+                    disabled={f.current === 0}
+                    className={`w-full mt-2 py-1 px-2 rounded-lg text-[9px] font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                      f.current > 0
+                        ? 'bg-cyan-950/80 hover:bg-cyan-900 border-cyan-500/60 text-cyan-300 hover:text-white shadow-[0_0_12px_rgba(6,182,212,0.35)] cursor-pointer'
+                        : 'bg-zinc-900/40 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-50'
+                    }`}
+                    title={f.current > 0 ? `Ver los ${f.current} miembros de ${f.name}` : 'Esta facción no tiene miembros registrados'}
+                  >
+                    <Users className="w-3 h-3" />
+                    <span>{f.current > 0 ? `MIEMBROS (${f.current})` : 'SIN MIEMBROS'}</span>
+                  </button>
                 </div>
               ))}
             </div>

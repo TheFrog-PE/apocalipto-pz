@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { exec } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { verifyHardwareProof } from '../hardware/scanner.js';
 import { signPayload, verifySignature } from '../crypto/keys.js';
 import { LocalUdpProxy } from './localProxy.js';
@@ -176,6 +176,7 @@ export class SwarmBridgeServer {
     const ADMIN_ONLY_ROUTES = new Set([
       '/api/admin/approve',
       '/api/admin/reject',
+      '/api/admin/revoke',
       '/api/admin/reset',
       '/api/admin/applicants',
       '/api/admin/rcon',
@@ -291,7 +292,7 @@ export class SwarmBridgeServer {
       }
 
       // 2. Health Check
-      if (req.method === 'GET' && url.pathname === '/health') {
+      if (req.method === 'GET' && (url.pathname === '/health' || url.pathname === '/api/health')) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ status: 'ONLINE', protocol: 'APOCALIPTO_PZ_SWARM_V1' }));
       }
@@ -789,6 +790,36 @@ export class SwarmBridgeServer {
         return;
       }
 
+      // 7b. EXPULSAR / REVOCAR MIEMBRO DE LA WHITELIST Y DE SU FACCIÓN
+      if (req.method === 'POST' && url.pathname === '/api/admin/revoke') {
+        this._parseBody(req, res, (body) => {
+          const { nodeId } = body;
+          if (!nodeId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'MISSING_NODE_ID' }));
+          }
+
+          const approvedNodes = this._readJson(this.approvedNodesFile, {});
+          const member = approvedNodes[nodeId];
+
+          if (member) {
+            delete approvedNodes[nodeId];
+            this._atomicWrite(this.approvedNodesFile, approvedNodes);
+
+            const rejectedNodes = this._readJson(this.rejectedNodesFile, {});
+            rejectedNodes[nodeId] = { revokedAt: Date.now(), reason: 'EXPELLED_BY_ADMIN' };
+            this._atomicWrite(this.rejectedNodesFile, rejectedNodes);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ 
+            success: true, 
+            message: `Miembro ${nodeId} expulsado de la facción y revocado de la Whitelist.` 
+          }));
+        });
+        return;
+      }
+
       // 8. RESET TOTAL DEL ENJAMBRE (Para pruebas del Creador)
       if (req.method === 'POST' && url.pathname === '/api/admin/reset') {
         this._atomicWrite(this.applicantsFile, []);
@@ -968,11 +999,15 @@ export class SwarmBridgeServer {
         }
 
         const runnerScript = path.resolve('E:\\PZ-PROYECT\\PZ-CORE\\scripts\\runAlfaServer.bat');
-        console.log(`[ALFA SERVER] Levantando Nodo Alfa via: ${runnerScript}`);
+        console.log(`[ALFA SERVER] Levantando Nodo Alfa en segundo plano (Modo Silencioso / Sin Ventanas CMD)...`);
 
-        exec(`start "" "${runnerScript}"`, (err) => {
-          if (err) console.error('[ALFA SERVER ERROR]', err.message);
+        const srvProc = spawn('cmd.exe', ['/c', runnerScript], {
+          cwd: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\ProjectZomboid',
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true
         });
+        srvProc.unref();
 
         if (!this._alfaEngineActive && this.adminIdentity) {
           try {
@@ -1013,7 +1048,7 @@ export class SwarmBridgeServer {
         } catch {}
 
         setTimeout(() => {
-          exec('taskkill /FI "WINDOWTITLE eq Apocalipto PZ - Nodo Alfa*" /T /F', () => {});
+          exec('taskkill /F /IM java.exe /T', () => {});
         }, 3000);
 
         if (this._alfaEngine) {
@@ -1240,18 +1275,7 @@ export class SwarmBridgeServer {
             }));
           }
 
-          // Disparar Project Zomboid de forma nativa desde el Bridge (Node.js ShellExecute, cero popups de WebView2)
-          console.log(`[GAME LAUNCH] Disparando lanzamiento de Steam para ${userToConnect} (${faction})...`);
-          try {
-            if (process.platform === 'win32') {
-              exec('start "" "steam://rungameid/108600"', (err) => {
-                if (err) console.error('[GAME LAUNCH ERROR]', err.message);
-                else console.log(`[GAME LAUNCH] Steam ejecutado exitosamente para ${userToConnect}.`);
-              });
-            }
-          } catch (err) {
-            console.error('[GAME LAUNCH ERROR]', err);
-          }
+          console.log(`[GAME LAUNCH] Credenciales, tickets y whitelist preparados para ${userToConnect} (${faction}). El Launcher se encargará del arranque directo.`);
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({
@@ -1565,6 +1589,40 @@ export class SwarmBridgeServer {
           blockHeight: this.failoverState.blockHeight,
           modResyncRequired: this.failoverState._modResyncRequired || false
         }));
+      }
+
+      // ── SERVIR DASHBOARD BENTO OS STANDALONE (Solo Loopback / Admin Local) ──
+      const adminDistDir = path.resolve(process.cwd(), 'PZ-ADMIN', 'dist');
+      if (isLoopback && fs.existsSync(adminDistDir)) {
+        let reqPath = url.pathname === '/' ? '/index.html' : url.pathname;
+        let filePath = path.join(adminDistDir, reqPath);
+
+        // Protección básica contra path traversal
+        if (!filePath.startsWith(adminDistDir)) {
+          filePath = path.join(adminDistDir, 'index.html');
+        }
+
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+          filePath = path.join(adminDistDir, 'index.html');
+        }
+
+        if (fs.existsSync(filePath)) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes = {
+            '.html': 'text/html; charset=utf-8',
+            '.js': 'application/javascript',
+            '.css': 'text/css',
+            '.json': 'application/json',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.ico': 'image/x-icon'
+          };
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          res.writeHead(200, { 'Content-Type': contentType });
+          return res.end(fs.readFileSync(filePath));
+        }
       }
 
       // 404

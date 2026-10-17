@@ -11,6 +11,7 @@ import Toast from './components/ui/Toast';
 
 // Bento Grid & Expanded Views
 import BentoGrid from './components/bento/BentoGrid';
+import SystemStandbyHero from './components/bento/SystemStandbyHero';
 import ExpandedChat from './components/expanded/ExpandedChat';
 import ExpandedWhitelist from './components/expanded/ExpandedWhitelist';
 import ExpandedFactions from './components/expanded/ExpandedFactions';
@@ -24,6 +25,7 @@ import PlayerPreviewModal from './components/modals/PlayerPreviewModal';
 import GatewayModal from './components/modals/GatewayModal';
 import AdminAccessModal from './components/modals/AdminAccessModal';
 import WorldConfigModal from './components/modals/WorldConfigModal';
+import FactionMembersModal from './components/modals/FactionMembersModal';
 
 // Static Data
 import { 
@@ -99,8 +101,11 @@ export default function App() {
   const [showGatewayModal, setShowGatewayModal] = useState(false);
   const [showAdminAccessModal, setShowAdminAccessModal] = useState(false);
   const [showWorldConfigModal, setShowWorldConfigModal] = useState(false);
+  const [inspectingFactionId, setInspectingFactionId] = useState(null);
+  const [approvedNodes, setApprovedNodes] = useState({});
   const [worldStatus, setWorldStatus] = useState('CHECKING'); // 'ONLINE' | 'STARTING' | 'OFFLINE' | 'CHECKING'
   const [worldProgress, setWorldProgress] = useState({ percent: 0, phase: 'Verificando...' });
+  const [bypassStandby, setBypassStandby] = useState(false);
 
   // Helper para alertas Toast
   const triggerAlert = (msg) => {
@@ -165,6 +170,7 @@ export default function App() {
         triggerAlert('✓ MUNDO GUARDADO Y APAGADO LIMPIAMENTE.');
         setWorldStatus('OFFLINE');
         setWorldProgress({ percent: 0, phase: 'Servidor detenido' });
+        setBypassStandby(false);
       }
     } catch (err) {
       triggerAlert(`Error al detener: ${err.message}`);
@@ -420,6 +426,9 @@ export default function App() {
           if (stats && stats.totalApproved !== undefined) {
             setAuditedCount(stats.totalApproved);
           }
+          if (stats && stats.approvedNodes) {
+            setApprovedNodes(stats.approvedNodes);
+          }
         }
       } catch {}
     }
@@ -515,6 +524,99 @@ export default function App() {
     }
   };
 
+  // Expulsar nodo de la facción y revocar Whitelist
+  const handleRevokeMember = async (nodeId, factionId) => {
+    try {
+      const res = await fetch('http://localhost:19842/api/admin/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert(`SUPERVIVIENTE ${nodeId} EXPULSADO Y REVOCADO.`);
+        setApprovedNodes(prev => {
+          const copy = { ...prev };
+          delete copy[nodeId];
+          return copy;
+        });
+
+        if (factionId) {
+          setFactions(prev => prev.map(f => {
+            if (f.id === factionId.toLowerCase()) {
+              const newCurrent = Math.max(0, f.current - 1);
+              return {
+                ...f,
+                current: newCurrent,
+                status: newCurrent >= f.max ? 'SATURADO' : 'OPERATIVO',
+                closed: newCurrent >= f.max ? true : false
+              };
+            }
+            return f;
+          }));
+        }
+
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const bc = new BroadcastChannel('apocalipto_pz_rules_channel');
+          bc.postMessage({
+            type: 'NODE_REVOKED',
+            nodeId,
+            factionId,
+            timestamp: Date.now()
+          });
+          bc.close();
+        }
+      } else {
+        triggerAlert(`Error al expulsar: ${data.error || 'Desconocido'}`);
+      }
+    } catch (err) {
+      triggerAlert(`Error de conexión al expulsar nodo: ${err.message}`);
+    }
+  };
+
+  // Helper para generar callsign determinista para miembros
+  const getCallsignForNode = (nodeId) => {
+    const nid = nodeId || 'node_000';
+    let hash = 0;
+    for (let i = 0; i < nid.length; i++) {
+      hash = (hash << 5) - hash + nid.charCodeAt(i);
+      hash |= 0;
+    }
+    const absHash = Math.abs(hash);
+    const prefixes = ['VANGUARDIA', 'FANTASMA', 'CENTINELA', 'HALCÓN', 'SOMBRA', 'TITÁN', 'ESPECTRO', 'VÍBORA', 'CÓNDOR', 'RAZOR'];
+    const suffixes = ['ALFA', 'BRAVO', 'DELTA', 'ECO', 'KILO', 'OMEGA', 'SIERRA', 'TANGO', 'ZULÚ', 'PHOENIX'];
+    const p = prefixes[absHash % prefixes.length];
+    const s = suffixes[(absHash >> 3) % suffixes.length];
+    const num = (absHash % 89) + 10;
+    return `OP-${p}-${s}-${num}`;
+  };
+
+  const inspectedFaction = factions.find(f => f.id === inspectingFactionId);
+  const inspectedFactionMembers = Object.values(approvedNodes)
+    .filter(item => {
+      const p = item.payload || item;
+      const fid = (p.factionId || p.faction || '').toLowerCase();
+      const target = (inspectingFactionId || '').toLowerCase();
+      if (!target) return false;
+      if (target === 'mok') return fid.includes('mok') || fid.includes('kin') || fid.includes('merod');
+      if (target === 'kto') return fid.includes('kto') || fid.includes('testam') || fid.includes('knox');
+      if (target === 'riv') return fid.includes('riv') || fid.includes('centin');
+      if (target === 'doe') return fid.includes('doe') || fid.includes('emerg') || fid.includes('milit');
+      return fid.includes(target) || target.includes(fid);
+    })
+    .map(item => {
+      const p = item.payload || item;
+      return {
+        nodeId: p.nodeId,
+        steamId: p.steamId,
+        faction: p.faction,
+        factionId: p.factionId,
+        assignedRole: p.assignedRole,
+        approvedAt: p.approvedAt,
+        callsign: getCallsignForNode(p.nodeId)
+      };
+    });
+
   // Envío de mensaje en Radio Chat
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
@@ -549,7 +651,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0a0c0e] text-zinc-200 flex flex-col justify-between font-mono text-xs select-none overflow-x-hidden p-3 gap-3 relative">
+    <div className="w-full min-h-screen bg-[#0a0c0e] text-zinc-200 flex flex-col justify-between font-mono text-xs select-none overflow-x-hidden p-2 sm:p-3.5 gap-2.5 sm:gap-3 relative max-w-full">
       
       {/* ── CAPAS DE AMBIENTACIÓN HUD TÁCTICA ── */}
       <div className="fixed inset-0 tactical-grid pointer-events-none" />
@@ -580,7 +682,18 @@ export default function App() {
       {/* ── 3. VISTAS PRINCIPALES (BENTO O ENFOQUE EXPANDIDO DE LOS 4 MÓDULOS) ── */}
       <main className="relative z-10 flex-1 flex flex-col gap-3">
         <AnimatePresence mode="wait">
-          {expandedModule === null && (
+          {expandedModule === null && ((worldStatus === 'OFFLINE' || worldStatus === 'STARTING') && !bypassStandby ? (
+            <SystemStandbyHero
+              key="standby-hero"
+              worldStatus={worldStatus}
+              worldProgress={worldProgress}
+              onStartWorld={handleStartWorld}
+              onOpenWorldConfig={() => setShowWorldConfigModal(true)}
+              onOpenRules={() => setShowRulesModal(true)}
+              onOpenMods={() => setExpandedModule('mods')}
+              onBypassToDashboard={() => setBypassStandby(true)}
+            />
+          ) : (
             <BentoGrid
               key="bento"
               messages={messages}
@@ -604,8 +717,9 @@ export default function App() {
               setBroadcastMessage={setBroadcastMessage}
               setExpandedModule={setExpandedModule}
               onTriggerAlert={triggerAlert}
+              onOpenFactionMembers={(fid) => setInspectingFactionId(fid)}
             />
-          )}
+          ))}
 
           {expandedModule === 'chat' && (
             <ExpandedChat
@@ -666,6 +780,7 @@ export default function App() {
               handleRevert={handleRevert}
               setExpandedModule={setExpandedModule}
               onTriggerAlert={triggerAlert}
+              onOpenFactionMembers={(fid) => setInspectingFactionId(fid)}
             />
           )}
 
@@ -756,6 +871,15 @@ export default function App() {
         worldProgress={worldProgress}
         onStartWorld={handleStartWorld}
         onStopWorld={handleStopWorld}
+      />
+
+      {/* ── MODAL DE MIEMBROS DE FACCIÓN Y GESTIÓN DE WHITELIST ── */}
+      <FactionMembersModal
+        isOpen={Boolean(inspectingFactionId)}
+        onClose={() => setInspectingFactionId(null)}
+        faction={inspectedFaction}
+        members={inspectedFactionMembers}
+        onRevokeMember={handleRevokeMember}
       />
 
       <Toast message={systemAlert} />
