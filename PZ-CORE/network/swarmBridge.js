@@ -1827,15 +1827,17 @@ export class SwarmBridgeServer {
     if (!username) return;
     try {
       const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
+      const BCRYPT_12345 = '$2a$12$O/BFHoDFPrfFaNPAACmWpuDEg/if.yPvM8N9H/d4teUaiE1tyDEGu';
+      const cleanUser = username.replace(/['"\\]/g, '');
+      const cleanPwd = (password === '12345' || !password) ? BCRYPT_12345 : password.replace(/['"\\]/g, '');
+      const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
+      
       if (fs.existsSync(serverDbPath)) {
-        const cleanUser = username.replace(/['"\\]/g, '');
-        const cleanPwd = (password || '12345').replace(/['"\\]/g, '');
-        const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
         const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('SELECT id FROM whitelist WHERE username = ? OR (steamid IS NOT NULL AND steamid != \\'\\' AND steamid = ?)', ('${cleanUser}', '${cleanSteam}')); r = cur.fetchone(); (cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${cleanPwd}', '${cleanSteam}', r[0])) if r else cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid, displayName) VALUES (\\'ApocaliptoPZ\\', ?, ?, 2, 1, ?, ?)', ('${cleanUser}', '${cleanPwd}', '${cleanSteam}', '${cleanUser}'))); conn.commit(); conn.close()"`;
         exec(pyCmd, () => {});
       }
       if (this.rcon && typeof this.rcon.execute === 'function') {
-        this.rcon.execute(`adduser "${username.replace(/['"\\]/g, '')}" "${(password || '12345').replace(/['"\\]/g, '')}"`).catch(() => {});
+        this.rcon.execute(`adduser "${cleanUser}" "12345"`).catch(() => {});
       }
       console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON.`);
     } catch (e) {
