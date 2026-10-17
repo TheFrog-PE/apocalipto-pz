@@ -803,12 +803,22 @@ export class SwarmBridgeServer {
           const member = approvedNodes[nodeId];
 
           if (member) {
+            const steamId = member.payload?.steamId;
             delete approvedNodes[nodeId];
             this._atomicWrite(this.approvedNodesFile, approvedNodes);
 
             const rejectedNodes = this._readJson(this.rejectedNodesFile, {});
             rejectedNodes[nodeId] = { revokedAt: Date.now(), reason: 'EXPELLED_BY_ADMIN' };
             this._atomicWrite(this.rejectedNodesFile, rejectedNodes);
+
+            // Eliminar también de la base de datos de Project Zomboid (whitelist table)
+            try {
+              const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
+              if (fs.existsSync(serverDbPath) && steamId) {
+                const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('DELETE FROM whitelist WHERE steamid = ?', ('${steamId}',)); conn.commit(); conn.close()"`;
+                exec(pyCmd, () => {});
+              }
+            } catch {}
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -816,6 +826,29 @@ export class SwarmBridgeServer {
             success: true, 
             message: `Miembro ${nodeId} expulsado de la facción y revocado de la Whitelist.` 
           }));
+        });
+        return;
+      }
+
+      // 7c. LIMPIAR O DESVINCULAR USUARIO DE LA WHITELIST DE PZ
+      if (req.method === 'POST' && url.pathname === '/api/admin/whitelist/clear-user') {
+        this._parseBody(req, res, (body) => {
+          const { username, steamId } = body;
+          try {
+            const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
+            if (fs.existsSync(serverDbPath)) {
+              let filter = '';
+              let param = '';
+              if (username) { filter = 'username = ?'; param = username; }
+              else if (steamId) { filter = 'steamid = ?'; param = steamId; }
+              if (filter) {
+                const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('DELETE FROM whitelist WHERE ${filter}', ('${param}',)); conn.commit(); conn.close()"`;
+                exec(pyCmd, () => {});
+              }
+            }
+          } catch {}
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, message: `Usuario ${username || steamId} limpiado de la whitelist.` }));
         });
         return;
       }
@@ -1238,12 +1271,10 @@ export class SwarmBridgeServer {
               }
             } catch {}
 
-            // 3. Sincronizar cuenta en SQLite ServerListSteam.db (Cliente) y ApocaliptoPZ.db (Whitelist Servidor)
+            // 3. Sincronizar cuenta en SQLite ServerListSteam.db (Cliente local)
             try {
               const clientDbPath = path.join(zomboidUserDir, 'db', 'ServerListSteam.db');
-              const serverDbPath = path.join(zomboidUserDir, 'db', 'ApocaliptoPZ.db');
-              const steamId = '76561198881952155';
-              const pySyncCmd = `python -c "import sqlite3, datetime; now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S');\n# 1. Client DB\nif r'${clientDbPath}':\n    c = sqlite3.connect(r'${clientDbPath.replace(/\\/g, '\\\\')}'); cur = c.cursor(); s = cur.execute('SELECT id FROM server WHERE id = 4 OR name = \\'Apocalipto PZ\\'').fetchone(); sid = s[0] if s else 4; ex = cur.execute('SELECT id FROM account WHERE serverId = ? AND username = ?', (sid, '${userToConnect}')).fetchone(); (cur.execute('UPDATE account SET password = ?, isSavePassword = 1, isUseSteamRelay = 0, authType = 1, lastLogon = ? WHERE id = ?', ('${userPassword}', now, ex[0])) if ex else cur.execute('INSERT INTO account (serverId, username, password, isSavePassword, isUseSteamRelay, authType, lastLogon) VALUES (?, ?, ?, 1, 0, 1, ?)', (sid, '${userToConnect}', '${userPassword}', now))); c.commit(); c.close()\n# 2. Server DB\nif r'${serverDbPath}':\n    s_conn = sqlite3.connect(r'${serverDbPath.replace(/\\/g, '\\\\')}'); s_cur = s_conn.cursor(); s_ex = s_cur.execute('SELECT id FROM whitelist WHERE username = ?', ('${userToConnect}',)).fetchone(); (s_cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${userPassword}', '${steamId}', s_ex[0])) if s_ex else s_cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid) VALUES (\\x27\\x27, ?, ?, 2, 1, ?)', ('${userToConnect}', '${userPassword}', '${steamId}'))); s_conn.commit(); s_conn.close()\n"`;
+              const pySyncCmd = `python -c "import sqlite3, datetime; now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S');\nif r'${clientDbPath}':\n    c = sqlite3.connect(r'${clientDbPath.replace(/\\/g, '\\\\')}'); cur = c.cursor(); s = cur.execute('SELECT id FROM server WHERE id = 4 OR name = \\'Apocalipto PZ\\'').fetchone(); sid = s[0] if s else 4; ex = cur.execute('SELECT id FROM account WHERE serverId = ? AND username = ?', (sid, '${userToConnect}')).fetchone(); (cur.execute('UPDATE account SET password = ?, isSavePassword = 1, isUseSteamRelay = 0, authType = 1, lastLogon = ? WHERE id = ?', ('${userPassword}', now, ex[0])) if ex else cur.execute('INSERT INTO account (serverId, username, password, isSavePassword, isUseSteamRelay, authType, lastLogon) VALUES (?, ?, ?, 1, 0, 1, ?)', (sid, '${userToConnect}', '${userPassword}', now))); c.commit(); c.close()\n"`;
               exec(pySyncCmd, () => {});
             } catch {}
           }
