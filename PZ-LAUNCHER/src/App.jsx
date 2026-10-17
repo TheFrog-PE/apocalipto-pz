@@ -51,6 +51,7 @@ export default function App() {
   const [showRules, setShowRules] = useState(false);
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [toast, setToast] = useState(null);
+  const handleShowToast = (newToast) => setToast(newToast);
   const [factions, setFactions] = useState(FACTIONS);
   const [survivorName, setSurvivorName] = useState(() => {
     const saved = localStorage.getItem('pz_survivor_name');
@@ -330,7 +331,6 @@ export default function App() {
     // Si aún no está aprobado, abrir el modal de verificación y aprobación
     setShowLaunchModal(true);
   };
-  const handleShowToast = (newToast) => setToast(newToast);
 
   const handleMouseMove = (e) => {
     const normX = (e.clientX / window.innerWidth  - 0.5) * 2;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, Users, Lock, CheckCircle2, Play, User, Zap, MapPin } from 'lucide-react';
+import { Download, Users, Play, User, Zap, MapPin } from 'lucide-react';
 
 export default function FactionsTab({ 
   factions, 
@@ -122,26 +122,16 @@ export default function FactionsTab({
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/80 p-[1px]">
                     <div
-                      className={`h-full ${isLockedOther ? 'bg-zinc-700' : faction.barFill} rounded-full transition-all duration-500`}
+                      className={`h-full ${faction.barFill || 'bg-emerald-500'} rounded-full transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
                 </div>
 
-                {/* Banner de condición */}
-                {isLockedOther && (
-                  <div className="mt-3 p-2 bg-red-950/70 border border-red-500/50 rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md">
-                    <Lock className="w-3 h-3 text-red-400 shrink-0" />
-                    <span className="text-[10px] font-mono text-red-200 font-bold tracking-tight">
-                      por esta demo solo puedes elegir una facción
-                    </span>
-                  </div>
-                )}
-
-                {isApprovedThis && (
+                {isSelected && (
                   <div className="mt-3 p-2 bg-emerald-950/40 border border-emerald-500/50 rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md">
                     <span className="text-[10px] font-mono text-emerald-300 font-bold tracking-tight">
-                      ✓ ACCESO CONCEDIDO POR EL CREADOR
+                      ✓ FACCIÓN SELECCIONADA
                     </span>
                   </div>
                 )}

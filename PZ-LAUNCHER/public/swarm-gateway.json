@@ -9,7 +9,7 @@
   "latestVersion": "1.1.5",
   "minRequiredVersion": "1.1.5",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "b64c37a7d0d05cfe73decd36c674d7c2970609dc7904e8f9e3264b5ae8f274f6",
-  "changelog": "Versión 1.1.5: Selección libre y cambio fluido entre las 4 facciones (DOE, MOK, KTO, RIV), reinicio limpio de personajes, admisión permanente para pugnubi y enlace directo UDPRakNet 63855.",
-  "updatedAt": "2026-10-17T14:36:00.000Z"
+  "sha256": "355a18ce9ba152435ac3b5a97c8a4afde5e98d9dd171608d425a2932a7817e4a",
+  "changelog": "Versión 1.1.5: Selección libre y cambio fluido entre las 4 facciones (DOE, MOK, KTO, RIV), reinicio limpio de personajes, corrección de pantalla en negro y enlace directo UDPRakNet 63855.",
+  "updatedAt": "2026-10-17T15:00:00.000Z"
 }
