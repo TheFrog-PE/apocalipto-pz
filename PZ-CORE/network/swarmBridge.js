@@ -741,7 +741,14 @@ export class SwarmBridgeServer {
             creatorPublicKey: this.adminIdentity.publicKey
           };
 
-          // Guardar nodo aprobado
+          // Guardar nodo aprobado (asegurar que no haya duplicados para el mismo steamId)
+          if (applicant.steamId) {
+            for (const k of Object.keys(approvedNodes)) {
+              if (approvedNodes[k]?.payload?.steamId === applicant.steamId && k !== nodeId) {
+                delete approvedNodes[k];
+              }
+            }
+          }
           approvedNodes[nodeId] = ticket;
           this._atomicWrite(this.approvedNodesFile, approvedNodes);
 
