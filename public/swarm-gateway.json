@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.5",
-  "minRequiredVersion": "1.1.5",
+  "latestVersion": "1.1.6",
+  "minRequiredVersion": "1.1.6",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "6e49762a500f706c82cc41030817f396c17381176bf9ecd60bdb6f30fbd763a3",
-  "changelog": "Versión 1.1.5: Bloqueo estricto de facciones alternativas tras selección, desbloqueo mediante reinicio de personaje y conexión Playit 63854.",
-  "updatedAt": "2026-10-18T01:01:24.392Z"
+  "sha256": "81a8c5851fa2c7618120e6632f24f9a1ebcc7382c0b63bc93e6464b5c8407361",
+  "changelog": "Versión 1.1.6: Bloqueo estricto e instantáneo de facciones alternativas al elegir una facción (persistente tras reinicio de launcher) y desbloqueo exclusivo mediante Reiniciar Personaje.",
+  "updatedAt": "2026-10-18T01:26:40.000Z"
 }

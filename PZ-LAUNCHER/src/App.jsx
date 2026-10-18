@@ -23,7 +23,22 @@ import { getSavedPermanentTicket, savePermanentTicket, getSwarmBridgeUrl, getOrC
 export default function App() {
   const [activeTab, setActiveTab] = useState('facciones');
   
-  // Solo se bloquea si el Creador YA le otorgó acceso criptográfico en Bento OS
+  // Facción bloqueada / elegida:
+  // Se obtiene de localStorage ('apocalipto_chosen_faction') o del ticket permanente si existe.
+  const [chosenFaction, setChosenFaction] = useState(() => {
+    try {
+      const ticket = getSavedPermanentTicket();
+      if (ticket && ticket.creatorSignature) {
+        const p = ticket.payload;
+        const fid = (p?.factionId || p?.faction || '').toLowerCase();
+        if (fid) return fid;
+      }
+      const saved = localStorage.getItem('apocalipto_chosen_faction');
+      if (saved && saved.trim()) return saved.trim().toLowerCase();
+    } catch {}
+    return null;
+  });
+
   const [approvedFaction, setApprovedFaction] = useState(() => {
     try {
       const ticket = getSavedPermanentTicket();
@@ -33,19 +48,6 @@ export default function App() {
       }
     } catch {}
     return null;
-  });
-
-  // El jugador puede navegar y cambiar libremente entre facciones antes de la aprobación
-  const [selectedFaction, setSelectedFaction] = useState(() => {
-    try {
-      const ticket = getSavedPermanentTicket();
-      if (ticket && ticket.creatorSignature) {
-        const p = ticket.payload;
-        const fid = (p?.factionId || p?.faction || '').toLowerCase();
-        if (fid) return fid;
-      }
-    } catch {}
-    return 'mok';
   });
 
   const [showRules, setShowRules] = useState(false);
@@ -175,7 +177,7 @@ export default function App() {
               if (fid) {
                 savePermanentTicket(statusData.ticket);
                 setApprovedFaction(fid);
-                setSelectedFaction(fid);
+                setChosenFaction(fid);
               }
               const ticketUser = statusData.ticket.payload?.username;
               if (ticketUser) {
@@ -187,7 +189,7 @@ export default function App() {
                   }
                 } catch {}
               }
-            } else if (statusData.status === 'NOT_FOUND' && approvedFaction) {
+            } else if (statusData.status === 'NOT_FOUND' && (approvedFaction || chosenFaction)) {
               // Si fue reseteado en el servidor
               try {
                 localStorage.removeItem('apocalipto_admission_ticket');
@@ -196,6 +198,7 @@ export default function App() {
                 localStorage.removeItem('pz_survivor_name');
               } catch {}
               setApprovedFaction(null);
+              setChosenFaction(null);
               setSurvivorName('');
             }
           }
@@ -205,7 +208,7 @@ export default function App() {
     fetchStats();
     const interval = setInterval(fetchStats, 2500);
     return () => clearInterval(interval);
-  }, [approvedFaction]);
+  }, [approvedFaction, chosenFaction]);
 
   // Polling del estado del Motor de Failover Alfa — actualiza el indicador táctico cada 6s
   useEffect(() => {
@@ -222,9 +225,11 @@ export default function App() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [mouseCoords, setMouseCoords] = useState({ x: -1000, y: -1000 });
 
-  // Selección de facción con bloqueo de las demás
+  // Selección de facción con bloqueo estricto de las demás
   const handleSelectFaction = async (factionId) => {
-    if (approvedFaction && approvedFaction !== factionId) {
+    const fid = (factionId || '').toLowerCase();
+    const activeLock = chosenFaction || approvedFaction;
+    if (activeLock && activeLock !== fid) {
       handleShowToast({
         title: '🔒 FACCIÓN BLOQUEADA',
         desc: 'Para cambiar de facción debes presionar primero "[ ↻ REINICIAR PERSONAJE ]".',
@@ -232,15 +237,14 @@ export default function App() {
       });
       return;
     }
-    setSelectedFaction(factionId);
-    setApprovedFaction(factionId);
+    setChosenFaction(fid);
     try {
-      localStorage.setItem('apocalipto_chosen_faction', factionId);
+      localStorage.setItem('apocalipto_chosen_faction', fid);
       const localId = getOrCreateLocalIdentity();
       if (localId?.nodeId) {
-        const factObj = factions.find(f => f.id === factionId);
-        const factionTag = factObj?.tag || factionId.toUpperCase();
-        await setSwarmNodeFaction(localId.nodeId, factionTag, factionId);
+        const factObj = factions.find(f => f.id === fid);
+        const factionTag = factObj?.tag || fid.toUpperCase();
+        await setSwarmNodeFaction(localId.nodeId, factionTag, fid);
       }
     } catch {}
   };
@@ -255,6 +259,7 @@ export default function App() {
         await resetSwarmCharacter(localId.nodeId);
       }
     } catch {}
+    setChosenFaction(null);
     setApprovedFaction(null);
     setSurvivorName('');
     setShowLaunchModal(false);
@@ -277,8 +282,11 @@ export default function App() {
               localStorage.removeItem('apocalipto_admission_ticket');
               localStorage.removeItem('apocalipto_local_identity');
               localStorage.removeItem('apocalipto_chosen_faction');
+              localStorage.removeItem('pz_survivor_name');
             } catch {}
             setApprovedFaction(null);
+            setChosenFaction(null);
+            setSurvivorName('');
             setShowLaunchModal(false);
             setFactions(prev => prev.map(f => ({ ...f, current: 0 })));
           }
@@ -289,7 +297,10 @@ export default function App() {
               const fid = (e.data.factionId || '').toLowerCase();
               if (fid) {
                 setApprovedFaction(fid);
-                setSelectedFaction(fid);
+                setChosenFaction(fid);
+                try {
+                  localStorage.setItem('apocalipto_chosen_faction', fid);
+                } catch {}
                 handleShowToast({
                   title: '¡ACCESO CONCEDIDO POR EL CREADOR!',
                   desc: `Tu nodo ha sido verificado criptográficamente en la facción ${fid.toUpperCase()}.`,
@@ -306,7 +317,8 @@ export default function App() {
     };
   }, []);
 
-  const selectedFactionData = factions.find((f) => f.id === selectedFaction) || null;
+  const activeFactionId = (chosenFaction || approvedFaction || '').toLowerCase();
+  const selectedFactionData = factions.find((f) => f.id === activeFactionId) || null;
   const onlineCount = factions.reduce((acc, f) => acc + (f.current || 0), 0);
 
   const handleLaunchGame = async () => {
@@ -426,7 +438,8 @@ export default function App() {
             <FactionsTab
               key="facciones"
               factions={factions}
-              selectedFaction={selectedFaction}
+              chosenFaction={chosenFaction}
+              selectedFaction={chosenFaction}
               approvedFaction={approvedFaction}
               survivorName={survivorName}
               onSurvivorNameChange={handleSurvivorNameChange}
@@ -461,13 +474,20 @@ export default function App() {
         perfMode={perfMode}
         onTogglePerfMode={handleTogglePerfMode}
         onApproved={(fid) => {
-          setApprovedFaction(fid);
           if (fid) {
-            setSelectedFaction(fid);
+            const lower = fid.toLowerCase();
+            setApprovedFaction(lower);
+            setChosenFaction(lower);
+            try {
+              localStorage.setItem('apocalipto_chosen_faction', lower);
+            } catch {}
             const localId = getOrCreateLocalIdentity();
             if (localId?.nodeId) {
-              setSwarmNodeFaction(localId.nodeId, fid.toUpperCase(), fid.toLowerCase());
+              setSwarmNodeFaction(localId.nodeId, fid.toUpperCase(), lower);
             }
+          } else {
+            setApprovedFaction(null);
+            setChosenFaction(null);
           }
         }}
       />

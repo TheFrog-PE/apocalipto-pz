@@ -4,6 +4,7 @@ import { Download, Users, Play, User, Zap, MapPin } from 'lucide-react';
 
 export default function FactionsTab({ 
   factions, 
+  chosenFaction,
   selectedFaction, 
   approvedFaction, 
   survivorName,
@@ -16,7 +17,8 @@ export default function FactionsTab({
   perfMode = true,
   onTogglePerfMode
 }) {
-  const currentFaction = factions.find(f => f.id === (approvedFaction || selectedFaction)) || factions[0];
+  const activeLock = (chosenFaction || approvedFaction || selectedFaction || '').toLowerCase() || null;
+  const currentFaction = factions.find(f => f.id === activeLock) || factions[0];
 
   return (
     <motion.div
@@ -38,18 +40,17 @@ export default function FactionsTab({
         </p>
       </div>
 
-      {/* Grid de Facciones: Navegación y cambio libre de facción */}
+      {/* Grid de Facciones: Una vez elegida una faccion, las demas se bloquean */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full mb-8">
         {factions.map((faction) => {
-          const isSelected = selectedFaction === faction.id || approvedFaction === faction.id;
-          const isLockedOther = Boolean(approvedFaction && approvedFaction !== faction.id);
+          const isSelected = activeLock === faction.id;
+          const isLockedOther = Boolean(activeLock && activeLock !== faction.id);
           const percentage = Math.min(100, (faction.current / faction.max) * 100);
 
           return (
             <div
               key={faction.id}
               onClick={() => {
-                if (isLockedOther) return;
                 if (onSelectFaction) {
                   onSelectFaction(faction.id);
                 }
@@ -195,44 +196,42 @@ export default function FactionsTab({
             <Download className="w-4 h-4 stroke-[2.5]" />
             <span>ACTUALIZAR LAUNCHER // v{updateInfo.latestVersion || 'NUEVA'}</span>
           </button>
+        ) : activeLock ? (
+          <>
+            <button
+              onClick={onLaunchGame}
+              className={`flex items-center justify-center gap-2 px-10 py-4 font-black text-sm tracking-widest uppercase transition-all rounded-xl cursor-pointer ${
+                approvedFaction
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.45)] hover:scale-[1.02] active:scale-[0.99]'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.65)] hover:scale-[1.02] active:scale-[0.99]'
+              }`}
+            >
+              {approvedFaction ? (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>EJECUTAR JUEGO (BUILD 42) // {currentFaction?.tag}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 stroke-[2.5]" />
+                  <span>INICIAR SUPERVIVENCIA // {currentFaction?.tag}</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={onResetFaction}
+              className="px-5 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-amber-500/70 text-zinc-400 hover:text-amber-400 text-xs font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm"
+              title="Eliminar personaje actual y desbloquear la selección para elegir otra facción"
+            >
+              [ ↻ REINICIAR PERSONAJE ]
+            </button>
+          </>
         ) : (
           <button
-            onClick={onLaunchGame}
-            className={`flex items-center justify-center gap-2 px-10 py-4 font-black text-sm tracking-widest uppercase transition-all rounded-xl cursor-pointer ${
-              approvedFaction
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.45)] hover:scale-[1.02] active:scale-[0.99]'
-                : 'bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.65)] hover:scale-[1.02] active:scale-[0.99]'
-            }`}
+            disabled
+            className="flex items-center justify-center gap-2 px-10 py-4 font-black text-sm tracking-widest uppercase rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-500 cursor-not-allowed select-none"
           >
-            {approvedFaction ? (
-              <>
-                <Play className="w-4 h-4 fill-current" />
-                <span>EJECUTAR JUEGO (BUILD 42) // {currentFaction?.tag}</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>INICIAR SUPERVIVENCIA // {currentFaction?.tag}</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {approvedFaction ? (
-          <button
-            onClick={onResetFaction}
-            className="px-5 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-amber-500/70 text-zinc-400 hover:text-amber-400 text-xs font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm"
-            title="Eliminar personaje actual y desbloquear la selección para elegir otra facción"
-          >
-            [ ↻ REINICIAR PERSONAJE ]
-          </button>
-        ) : (
-          <button
-            onClick={onResetFaction}
-            className="px-4 py-4 bg-zinc-950/60 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-500 hover:text-zinc-300 text-[11px] font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm"
-            title="Limpiar personaje y seleccionar facción"
-          >
-            [ ↻ REINICIAR PERSONAJE ]
+            <span>ELIGE UNA FACCIÓN PARA COMENZAR</span>
           </button>
         )}
       </div>
