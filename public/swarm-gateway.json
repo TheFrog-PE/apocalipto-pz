@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://tests-warning-referenced-selection.trycloudflare.com",
+  "gatewayUrl": "https://centers-genuine-northwest-reveals.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -11,5 +11,5 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "83dcb5bd464ad331f54102b891b348c9be03dea16b0f11bb1daa53cd683eac14",
   "changelog": "Versión 1.1.6: Bloqueo estricto e instantáneo de facciones alternativas al elegir una facción (persistente tras reinicio de launcher) y desbloqueo exclusivo mediante Reiniciar Personaje.",
-  "updatedAt": "2026-10-18T01:56:45.000Z"
+  "updatedAt": "2026-10-18T02:21:11.546Z"
 }
