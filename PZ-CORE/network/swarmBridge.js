@@ -682,7 +682,7 @@ export class SwarmBridgeServer {
         const applicants = this._readJson(this.applicantsFile, []);
         let applicant = applicants.find(a => a.nodeId === targetNodeId);
 
-        if (!applicant && targetNodeId.startsWith('node_')) {
+        if (!applicant && targetNodeId.startsWith('node_') && !isLoopback) {
           // Si el launcher está consultando activamente su estado pero no figuraba en applicants
           // (ej: se reseteó la lista o falló la primera petición de registro por honeypot previo),
           // registrarlo de inmediato como PENDING para que aparezca en Bento OS para su aprobación.
