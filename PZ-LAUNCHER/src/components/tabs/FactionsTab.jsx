@@ -42,20 +42,24 @@ export default function FactionsTab({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full mb-8">
         {factions.map((faction) => {
           const isSelected = selectedFaction === faction.id || approvedFaction === faction.id;
+          const isLockedOther = Boolean(approvedFaction && approvedFaction !== faction.id);
           const percentage = Math.min(100, (faction.current / faction.max) * 100);
 
           return (
             <div
               key={faction.id}
               onClick={() => {
+                if (isLockedOther) return;
                 if (onSelectFaction) {
                   onSelectFaction(faction.id);
                 }
               }}
-              className={`relative flex flex-col backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 shadow-xl cursor-pointer ${
-                isSelected
-                  ? `${faction.selectedStyle} scale-[1.02] shadow-2xl ring-2 ring-emerald-500/50`
-                  : `bg-gradient-to-b from-[#161616]/95 to-[#121212]/95 border-zinc-800/80 ${faction.hoverGlow} hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.99] group`
+              className={`relative flex flex-col backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 shadow-xl ${
+                isLockedOther
+                  ? 'opacity-30 grayscale border-zinc-900 bg-zinc-950/70 cursor-not-allowed select-none'
+                  : isSelected
+                    ? `${faction.selectedStyle} scale-[1.02] shadow-2xl ring-2 ring-emerald-500/50 cursor-pointer`
+                    : `bg-gradient-to-b from-[#161616]/95 to-[#121212]/95 border-zinc-800/80 ${faction.hoverGlow} hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.99] group cursor-pointer`
               }`}
             >
               {/* Imagen Miniatura */}
@@ -63,13 +67,17 @@ export default function FactionsTab({
                 <img
                   src={faction.image}
                   alt={faction.name}
-                  className={`w-full h-full object-cover ${faction.imagePosition || 'object-[center_30%]'} group-hover:scale-108 group-hover:brightness-110 transition-all duration-500`}
+                  className={`w-full h-full object-cover ${faction.imagePosition || 'object-[center_30%]'} ${isLockedOther ? 'brightness-50' : 'group-hover:scale-108 group-hover:brightness-110'} transition-all duration-500`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent opacity-90" />
                 
                 {/* Indicador táctico en la esquina superior derecha */}
                 <div className="absolute top-2.5 right-2.5 z-20">
-                  {isSelected ? (
+                  {isLockedOther ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-zinc-900/95 border border-zinc-800 text-[9px] font-mono text-zinc-500 backdrop-blur-sm shadow flex items-center gap-1">
+                      <span>🔒</span> BLOQUEADA
+                    </span>
+                  ) : isSelected ? (
                     <span className={`px-2.5 py-0.5 rounded-full border text-[9px] font-mono backdrop-blur-sm shadow flex items-center gap-1 ${faction.activeBadge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${faction.activeDot} animate-pulse`} />
                       SELECCIONADA
@@ -87,26 +95,26 @@ export default function FactionsTab({
                 <div>
                   {/* Tag identificador */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-mono font-bold backdrop-blur-sm bg-black/70 ${faction.accentColor}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-mono font-bold backdrop-blur-sm ${isLockedOther ? 'bg-zinc-900/80 text-zinc-600 border-zinc-800' : `bg-black/70 ${faction.accentColor}`}`}>
                       {faction.tag}
                     </span>
                   </div>
 
-                  <h3 className="text-xs font-bold tracking-wider mb-2 uppercase transition-colors text-zinc-200 group-hover:text-white">
+                  <h3 className={`text-xs font-bold tracking-wider mb-2 uppercase transition-colors ${isLockedOther ? 'text-zinc-600' : 'text-zinc-200 group-hover:text-white'}`}>
                     {faction.name}
                   </h3>
 
                   {faction.spawnLocation && (
-                    <div className="flex items-center gap-1.5 mb-2.5 px-2 py-1 rounded bg-black/60 border border-zinc-800 text-[10px] font-mono">
-                      <MapPin className="w-3 h-3 text-red-400 shrink-0" />
+                    <div className={`flex items-center gap-1.5 mb-2.5 px-2 py-1 rounded bg-black/60 border text-[10px] font-mono ${isLockedOther ? 'border-zinc-900 text-zinc-600' : 'border-zinc-800 text-zinc-200'}`}>
+                      <MapPin className={`w-3 h-3 shrink-0 ${isLockedOther ? 'text-zinc-600' : 'text-red-400'}`} />
                       <span className="text-zinc-500 font-bold">SPAWN:</span>
-                      <span className="font-semibold truncate text-zinc-200">
+                      <span className="font-semibold truncate">
                         {faction.spawnLocation}
                       </span>
                     </div>
                   )}
 
-                  <p className="text-[11px] leading-tight uppercase font-mono line-clamp-3 transition-colors text-zinc-400 group-hover:text-zinc-300">
+                  <p className={`text-[11px] leading-tight uppercase font-mono line-clamp-3 transition-colors ${isLockedOther ? 'text-zinc-600' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
                     {faction.description}
                   </p>
                 </div>
@@ -118,23 +126,29 @@ export default function FactionsTab({
                       <Users className="w-3 h-3 text-zinc-500" />
                       CAPACITY
                     </span>
-                    <span className="font-bold text-zinc-300">{faction.current}/{faction.max}</span>
+                    <span className={`font-bold ${isLockedOther ? 'text-zinc-600' : 'text-zinc-300'}`}>{faction.current}/{faction.max}</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/80 p-[1px]">
                     <div
-                      className={`h-full ${faction.barFill || 'bg-emerald-500'} rounded-full transition-all duration-500`}
+                      className={`h-full ${isLockedOther ? 'bg-zinc-700' : (faction.barFill || 'bg-emerald-500')} rounded-full transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
                 </div>
 
-                {isSelected && (
+                {isLockedOther ? (
+                  <div className="mt-3 p-2 bg-zinc-950/60 border border-zinc-900 rounded-xl text-center flex items-center justify-center gap-1.5 shadow-sm">
+                    <span className="text-[10px] font-mono text-zinc-600 font-bold tracking-tight">
+                      🔒 REINICIA PERSONAJE PARA ELEGIR
+                    </span>
+                  </div>
+                ) : isSelected ? (
                   <div className="mt-3 p-2 bg-emerald-950/40 border border-emerald-500/50 rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md">
                     <span className="text-[10px] font-mono text-emerald-300 font-bold tracking-tight">
                       ✓ FACCIÓN SELECCIONADA
                     </span>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           );

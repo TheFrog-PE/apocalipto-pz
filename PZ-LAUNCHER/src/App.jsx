@@ -222,8 +222,16 @@ export default function App() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [mouseCoords, setMouseCoords] = useState({ x: -1000, y: -1000 });
 
-  // Cambio libre y fluido de facción
+  // Selección de facción con bloqueo de las demás
   const handleSelectFaction = async (factionId) => {
+    if (approvedFaction && approvedFaction !== factionId) {
+      handleShowToast({
+        title: '🔒 FACCIÓN BLOQUEADA',
+        desc: 'Para cambiar de facción debes presionar primero "[ ↻ REINICIAR PERSONAJE ]".',
+        type: 'warning'
+      });
+      return;
+    }
     setSelectedFaction(factionId);
     setApprovedFaction(factionId);
     try {
@@ -239,6 +247,9 @@ export default function App() {
 
   const handleResetFaction = async () => {
     try {
+      localStorage.removeItem('apocalipto_admission_ticket');
+      localStorage.removeItem('apocalipto_chosen_faction');
+      localStorage.removeItem('pz_survivor_name');
       const localId = getOrCreateLocalIdentity();
       if (localId?.nodeId) {
         await resetSwarmCharacter(localId.nodeId);
@@ -249,7 +260,7 @@ export default function App() {
     setShowLaunchModal(false);
     handleShowToast({
       title: 'PERSONAJE REINICIADO',
-      desc: 'Tu personaje ha sido reiniciado con éxito. Ahora puedes elegir libremente cualquier facción (DOE, MOK, KTO, RIV) y nombre.',
+      desc: 'Has reiniciado tu personaje. Las 4 facciones se han desbloqueado. Elige tu nueva facción.',
       type: 'info'
     });
   };

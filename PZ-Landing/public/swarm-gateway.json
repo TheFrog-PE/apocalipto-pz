@@ -9,7 +9,7 @@
   "latestVersion": "1.1.5",
   "minRequiredVersion": "1.1.5",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "4d9764f2e01f09e051d4b3bb741b3dce81c48fa9b20699c4fbd4a319113cc736",
-  "changelog": "Versión 1.1.5: Conexión oficial sincronizada al túnel activo Playit 63854 (Steam 16261), selección libre de facciones y persistencia definitiva.",
-  "updatedAt": "2026-10-17T21:09:02.146Z"
+  "sha256": "6e49762a500f706c82cc41030817f396c17381176bf9ecd60bdb6f30fbd763a3",
+  "changelog": "Versión 1.1.5: Bloqueo estricto de facciones alternativas tras selección, desbloqueo mediante reinicio de personaje y conexión Playit 63854.",
+  "updatedAt": "2026-10-18T01:01:24.514Z"
 }
