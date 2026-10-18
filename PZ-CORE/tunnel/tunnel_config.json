@@ -9,10 +9,10 @@
     "datacenter": "Santiago, Chile"
   },
   "bridgeTunnel": {
-    "url": "https://tests-warning-referenced-selection.trycloudflare.com",
+    "url": "https://johnson-dried-equipment-respect.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-17T20:59:47.008Z"
+  "configuredAt": "2026-10-18T03:38:41.417Z"
 }

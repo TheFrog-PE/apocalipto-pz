@@ -189,17 +189,12 @@ export default function App() {
                   }
                 } catch {}
               }
-            } else if (statusData.status === 'NOT_FOUND' && (approvedFaction || chosenFaction)) {
-              // Si fue reseteado en el servidor
+            } else if (statusData.status === 'NOT_FOUND' && approvedFaction) {
+              // Solo si tenía un ticket de admisión formal que fue revocado por el Creador
               try {
                 localStorage.removeItem('apocalipto_admission_ticket');
-                localStorage.removeItem('apocalipto_local_identity');
-                localStorage.removeItem('apocalipto_chosen_faction');
-                localStorage.removeItem('pz_survivor_name');
               } catch {}
               setApprovedFaction(null);
-              setChosenFaction(null);
-              setSurvivorName('');
             }
           }
         }
