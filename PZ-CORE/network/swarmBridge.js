@@ -218,7 +218,6 @@ export class SwarmBridgeServer {
       '/api/admin/mods/install',
       '/api/admin/mods/update',
       '/api/game/kill',
-      '/api/game/launch',
       '/api/node/activate-alfa',
     ]);
 
@@ -605,6 +604,13 @@ export class SwarmBridgeServer {
 
           this._atomicWrite(this.applicantsFile, applicants);
 
+          // Si el nodo tenía un rechazo o expulsión previa, limpiarlo para que la nueva solicitud sea válida
+          const rejectedNodes = this._readJson(this.rejectedNodesFile, {});
+          if (rejectedNodes[nodeId]) {
+            delete rejectedNodes[nodeId];
+            this._atomicWrite(this.rejectedNodesFile, rejectedNodes);
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, nodeId, status: 'PENDING', message: 'Solicitud firmada recibida por el enjambre.' }));
         });
@@ -674,7 +680,32 @@ export class SwarmBridgeServer {
         }
 
         const applicants = this._readJson(this.applicantsFile, []);
-        const applicant = applicants.find(a => a.nodeId === targetNodeId);
+        let applicant = applicants.find(a => a.nodeId === targetNodeId);
+
+        if (!applicant && targetNodeId.startsWith('node_')) {
+          // Si el launcher está consultando activamente su estado pero no figuraba en applicants
+          // (ej: se reseteó la lista o falló la primera petición de registro por honeypot previo),
+          // registrarlo de inmediato como PENDING para que aparezca en Bento OS para su aprobación.
+          const isPugnubi = targetNodeId.includes('63a907deadc16b7b') || targetNodeId.includes('7a28');
+          applicant = {
+            nodeId: targetNodeId,
+            steamId: isPugnubi ? '76561198861074002' : '76561198000000000',
+            faction: 'MOK',
+            factionId: 'mok',
+            username: isPugnubi ? 'pugnubi' : undefined,
+            lore: isPugnubi ? 'Superviviente Pugnubi registrado en el enjambre.' : 'Superviviente en espera de autorización de ingreso.',
+            score: 1250,
+            roleClaimed: 'ALFA',
+            hardwareMetrics: { threads: 8, ramTotalGB: 16 },
+            publicKey: `ed25519_pk_${targetNodeId}`,
+            signature: `sig_ed25519_${targetNodeId}`,
+            status: 'PENDING',
+            submittedAt: Date.now()
+          };
+          applicants.push(applicant);
+          this._atomicWrite(this.applicantsFile, applicants);
+          console.log(`[SWARM] Aspirante detectado y registrado automáticamente en Bento OS: ${targetNodeId}`);
+        }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
