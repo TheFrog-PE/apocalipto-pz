@@ -137,11 +137,19 @@ export default function App() {
         let res;
         try {
           res = await fetch(`${bridgeUrl}/api/swarm/stats`, { signal: AbortSignal.timeout(3000) });
-        } catch {
-          if (bridgeUrl !== 'http://127.0.0.1:19842') {
-            res = await fetch('http://127.0.0.1:19842/api/swarm/stats', { signal: AbortSignal.timeout(2000) });
+        } catch {}
+
+        if (!res || !res.ok) {
+          try {
+            res = await fetch('http://127.0.0.1:19842/api/swarm/stats', { signal: AbortSignal.timeout(1500) });
             if (res && res.ok) bridgeUrl = 'http://127.0.0.1:19842';
-          }
+          } catch {}
+        }
+
+        if (!res || !res.ok) {
+          try {
+            res = await fetch('https://johnson-dried-equipment-respect.trycloudflare.com/api/swarm/stats', { signal: AbortSignal.timeout(3000) });
+          } catch {}
         }
 
         if (res && res.ok) {
@@ -164,10 +172,18 @@ export default function App() {
           let statusRes;
           try {
             statusRes = await fetch(`${bridgeUrl}/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(3000) });
-          } catch {
-            if (bridgeUrl !== 'http://127.0.0.1:19842') {
-              statusRes = await fetch(`http://127.0.0.1:19842/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(2000) });
-            }
+          } catch {}
+
+          if (!statusRes || !statusRes.ok) {
+            try {
+              statusRes = await fetch(`http://127.0.0.1:19842/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(1500) });
+            } catch {}
+          }
+
+          if (!statusRes || !statusRes.ok) {
+            try {
+              statusRes = await fetch(`https://johnson-dried-equipment-respect.trycloudflare.com/api/node/status/${localId.nodeId}`, { signal: AbortSignal.timeout(3000) });
+            } catch {}
           }
 
           if (statusRes && statusRes.ok) {

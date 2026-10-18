@@ -1,5 +1,5 @@
-{
-  "gatewayUrl": "https://tests-warning-referenced-selection.trycloudflare.com",
+﻿{
+  "gatewayUrl": "https://johnson-dried-equipment-respect.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -9,7 +9,7 @@
   "latestVersion": "1.1.7",
   "minRequiredVersion": "1.1.7",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "5592107a38ee8b99b7539bb6228ad0f030c040be61d2982ddef66d67d67628fd",
-  "changelog": "Versión 1.1.7: Corrección crítica de deselección automática de facción para nuevos usuarios y sincronización permanente de nodo para pugnubi.",
-  "updatedAt": "2026-10-18T05:11:30.000Z"
+  "sha256": "b4361b8ed57dcd98299e62ea8934c6a7f0574635fa70b1625ee57725496235b3",
+  "changelog": "Versión 1.1.7: Corrección de deselección automática de facción, enlace al túnel oficial Cloudflare y sincronización de conteo de facciones en vivo.",
+  "updatedAt": "2026-10-18T05:37:00.000Z"
 }

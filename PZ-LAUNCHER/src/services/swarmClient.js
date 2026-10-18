@@ -10,9 +10,9 @@
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
 const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 const ALT_BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
-export const FALLBACK_PUBLIC_GATEWAY = 'https://responsibilities-cancel-supplements-call.trycloudflare.com';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://johnson-dried-equipment-respect.trycloudflare.com';
 
-let cachedRemoteGateway = null;
+let cachedRemoteGateway = FALLBACK_PUBLIC_GATEWAY;
 let isLocalHostActive = false;
 
 // Inicialización de descubrimiento al arrancar el cliente
@@ -35,8 +35,9 @@ if (typeof window !== 'undefined') {
         if (res.ok) {
           const data = await res.json();
           if (data && data.gatewayUrl) {
-            cachedRemoteGateway = data.gatewayUrl.replace(/\/$/, '');
-            localStorage.setItem('apocalipto_swarm_gateway', cachedRemoteGateway);
+            const cleanUrl = data.gatewayUrl.replace(/\/$/, '');
+            cachedRemoteGateway = cleanUrl;
+            try { localStorage.setItem('apocalipto_swarm_gateway', cleanUrl); } catch {}
             break;
           }
         }
@@ -44,6 +45,7 @@ if (typeof window !== 'undefined') {
     }
   };
   fetchRegistry();
+  setInterval(fetchRegistry, 30000); // Re-consultar cada 30s por si cambia el túnel
 }
 
 /**
@@ -254,13 +256,19 @@ export function resetLocalSwarmIdentity() {
  */
 export async function setSwarmNodeFaction(nodeId, faction, factionId) {
   try {
-    const res = await fetch(`${getSwarmBridgeUrl()}/api/node/set-faction`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nodeId, faction, factionId })
-    });
-    if (res.ok) {
-      return await res.json();
+    const urls = [...new Set([getSwarmBridgeUrl(), cachedRemoteGateway, FALLBACK_PUBLIC_GATEWAY, 'http://127.0.0.1:19842'].filter(Boolean))];
+    for (const u of urls) {
+      try {
+        const res = await fetch(`${u}/api/node/set-faction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nodeId, faction, factionId }),
+          signal: AbortSignal.timeout(3000)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch {}
     }
   } catch {}
   return null;
@@ -272,11 +280,18 @@ export async function setSwarmNodeFaction(nodeId, faction, factionId) {
 export async function resetSwarmCharacter(nodeId) {
   try {
     if (nodeId) {
-      await fetch(`${getSwarmBridgeUrl()}/api/node/reset-character`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodeId })
-      });
+      const urls = [...new Set([getSwarmBridgeUrl(), cachedRemoteGateway, FALLBACK_PUBLIC_GATEWAY, 'http://127.0.0.1:19842'].filter(Boolean))];
+      for (const u of urls) {
+        try {
+          const res = await fetch(`${u}/api/node/reset-character`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nodeId }),
+            signal: AbortSignal.timeout(3000)
+          });
+          if (res.ok) break;
+        } catch {}
+      }
     }
   } catch {}
   try {
@@ -428,6 +443,24 @@ export async function verifyOrRegisterSwarmAccess(faction = 'DOE', lore = '', fa
       } catch {}
     }
 
+    // Fallback directo a FALLBACK_PUBLIC_GATEWAY garantizado
+    if (!res || !res.ok) {
+      try {
+        res = await fetch(`${FALLBACK_PUBLIC_GATEWAY}/api/node/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            steamId: identity.steamId,
+            faction,
+            factionId,
+            lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,
+            signedHardwareProof
+          }),
+          signal: AbortSignal.timeout(4000)
+        });
+      } catch {}
+    }
+
     if (!res || !res.ok) {
       return { status: 'PENDING', identity, message: 'Esperando respuesta del enjambre.' };
     }
@@ -474,6 +507,12 @@ export async function pollApprovalStatus(nodeId) {
             res = await fetch(`${bridgeUrl}/api/node/status/${nodeId}`, { signal: AbortSignal.timeout(3000) });
           }
         }
+      } catch {}
+    }
+
+    if (!res || !res.ok) {
+      try {
+        res = await fetch(`${FALLBACK_PUBLIC_GATEWAY}/api/node/status/${nodeId}`, { signal: AbortSignal.timeout(3000) });
       } catch {}
     }
 
