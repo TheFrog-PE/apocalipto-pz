@@ -1296,6 +1296,18 @@ export class SwarmBridgeServer {
           const launchSteamId = approvedNodes[nodeId]?.payload?.steamId || null;
           this._syncUserToPzWhitelist(userToConnect, body.password || '12345', launchSteamId);
 
+          // Si la petición proviene de un jugador remoto (WAN), SOLO sincronizarlo en la Whitelist del servidor.
+          // NUNCA sobreescribir los archivos locales (.ini o DBs) de la PC del anfitrión.
+          if (!isLocalAdmin) {
+            console.log(`[GAME LAUNCH] Superviviente remoto autorizado en whitelist: ${userToConnect} (${faction || 'SIN_FACCION'})`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: true,
+              remote: true,
+              message: `Superviviente ${userToConnect} sincronizado en la whitelist del servidor.`
+            }));
+          }
+
           // Solo iniciar proxy UDP local si el targetHost es REMOTO (otro nodo del enjambre)
           // Si es 127.0.0.1 / localhost, el cliente PZ se conecta directamente al servidor local sin intermediarios
           let proxyStatus = { isDirect: true, note: 'Conexión local directa a PZ' };
