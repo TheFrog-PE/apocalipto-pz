@@ -1,15 +1,15 @@
-﻿{
-  "gatewayUrl": "https://johnson-dried-equipment-respect.trycloudflare.com",
+{
+  "gatewayUrl": "https://louise-magnet-tribune-assumes.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.7",
-  "minRequiredVersion": "1.1.7",
+  "latestVersion": "1.2.0",
+  "minRequiredVersion": "1.2.0",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "b4361b8ed57dcd98299e62ea8934c6a7f0574635fa70b1625ee57725496235b3",
-  "changelog": "Versión 1.1.7: Corrección de deselección automática de facción, enlace al túnel oficial Cloudflare y sincronización de conteo de facciones en vivo.",
-  "updatedAt": "2026-10-18T05:37:00.000Z"
+  "sha256": "d05e8dec7ec4e0e64f22d97061c3364fc20dfbc18d9e22c30c73fee6f58e36a8",
+  "changelog": "Versión 1.2.0: Rediseño táctico con panel vertical de 4 slots a la derecha, creación independiente por slot en facciones distintas, eliminación sincronizada con Zomboid y cero secuestro de menús en solitario.",
+  "updatedAt": "2026-10-22T23:27:58.845Z"
 }
