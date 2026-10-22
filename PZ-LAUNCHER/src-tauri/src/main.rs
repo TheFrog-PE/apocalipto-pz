@@ -440,16 +440,20 @@ local function syncApocaliptoFaction(player)
     end)
 end
 
-Events.OnGameStart.Add(syncApocaliptoFaction)
-Events.OnPlayerSpawn.Add(syncApocaliptoFaction)
-Events.OnCreatePlayer.Add(function(id)
-    local p = getSpecificPlayer(id)
-    if p then syncApocaliptoFaction(p) end
-end)
-Events.EveryOneMinute.Add(function()
-    local p = getPlayer()
-    if p then syncApocaliptoFaction(p) end
-end)
+if Events.OnGameStart then Events.OnGameStart.Add(syncApocaliptoFaction) end
+if Events.OnPlayerSpawn then Events.OnPlayerSpawn.Add(syncApocaliptoFaction) end
+if Events.OnCreatePlayer then
+    Events.OnCreatePlayer.Add(function(id)
+        local p = getSpecificPlayer(id)
+        if p then syncApocaliptoFaction(p) end
+    end)
+end
+if Events.EveryOneMinute then
+    Events.EveryOneMinute.Add(function()
+        local p = getPlayer()
+        if p then syncApocaliptoFaction(p) end
+    end)
+end
 "##;
                 let _ = fs::write(&faction_sync_path, lua_sync_content);
 
@@ -460,13 +464,35 @@ local ticketChecked = false
 local pendingTicket = nil
 local tickAttempts = 0
 
+-- Función de ayuda para obtener el usuario activo de Apocalipto
+local function getApocaliptoActiveUser()
+    if _G.ApocaliptoSession and _G.ApocaliptoSession.user and _G.ApocaliptoSession.user ~= "" then
+        return _G.ApocaliptoSession.user
+    end
+    if getServerList then
+        local servers = getServerList()
+        if servers then
+            for _, s in ipairs(servers) do
+                local sName = s:getName() or ""
+                if string.find(sName, "Apocalipto") or s:getIp() == "127.0.0.1" or s:getIp() == "147.185.221.215" then
+                    local u = s:getUserName()
+                    if u and u ~= "" then
+                        return u
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
 local function doApocaliptoConnect(ticket)
     if not ticket or not ticket.user or ticket.user == "" then return false end
     local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
     local mainScreen = MainScreen and MainScreen.instance
 
     if connectUI and mainScreen then
-        print("[APOCALIPTO PZ] Conectando directamente como '" .. tostring(ticket.user) .. "' (" .. tostring(ticket.faction or "DOE") .. ") a " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port or 16261))
+        print("[APOCALIPTO PZ] Auto-conectando directamente como '" .. tostring(ticket.user) .. "' (" .. tostring(ticket.faction or "DOE") .. ") -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port or 16261))
         
         if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
         _G.ApocaliptoSession.faction = ticket.faction or "DOE"
@@ -484,7 +510,7 @@ local function doApocaliptoConnect(ticket)
             mainScreen.bottomPanel or mainScreen,
             ticket.serverName or "Apocalipto PZ",
             ticket.user,
-            "12345",
+            ticket.password or "12345",
             ticket.ip,
             "",
             tostring(ticket.port or 16261),
@@ -498,12 +524,64 @@ local function doApocaliptoConnect(ticket)
     return false
 end
 
+-- 1. Hook sobre ServerConnectPopup para auto-completar usuario y contraseña SIEMPRE
+if ServerConnectPopup then
+    local orig_setServer = ServerConnectPopup.setServer
+    ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
+        if orig_setServer then
+            orig_setServer(self, ip, port, passwordStr)
+        end
+
+        local uName = getApocaliptoActiveUser()
+        if uName and uName ~= "" then
+            if self.usernameEntry then
+                self.usernameEntry:setText(uName)
+            end
+            if self.passwordEntry then
+                self.passwordEntry:setText("12345")
+            end
+            if self.serverPasswordEntry then
+                self.serverPasswordEntry:setText("")
+            end
+            if self.checkFields then
+                self:checkFields()
+            end
+
+            print("[APOCALIPTO PZ] Popup interceptado: Auto-conectando con usuario '" .. tostring(uName) .. "'")
+            self:setVisible(false)
+            if MainScreen and MainScreen.instance and MainScreen.instance.bottomPanel then
+                MainScreen.instance.bottomPanel:setVisible(false)
+            end
+
+            local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+            if connectUI then
+                connectUI:connect(
+                    self,
+                    "Apocalipto PZ",
+                    uName,
+                    "12345",
+                    ip,
+                    "",
+                    tostring(port),
+                    "",
+                    false,
+                    true,
+                    1
+                )
+            end
+        end
+    end
+end
+
+-- 2. Detección y ejecución por Ticket Efímero
 local function onTickTryConnect()
     if not pendingTicket then return end
     tickAttempts = tickAttempts + 1
     if doApocaliptoConnect(pendingTicket) or tickAttempts > 60 then
         pendingTicket = nil
-        Events.OnTick.Remove(onTickTryConnect)
+        if Events.OnTick then
+            Events.OnTick.Remove(onTickTryConnect)
+        end
     end
 end
 
@@ -534,7 +612,6 @@ local function checkApocaliptoLaunchTicket()
     end
     reader:close()
 
-    -- [SEGURIDAD TOTAL] Inmediatamente vaciar el ticket de disco para que NUNCA afecte futuras partidas
     local eraser = getFileWriter(fname, true, false)
     if eraser then
         eraser:close()
@@ -544,14 +621,23 @@ local function checkApocaliptoLaunchTicket()
         return
     end
 
+    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+    _G.ApocaliptoSession.user = ticket.user
+    _G.ApocaliptoSession.faction = ticket.faction or "DOE"
+    _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
     if not doApocaliptoConnect(ticket) then
         pendingTicket = ticket
         tickAttempts = 0
-        Events.OnTick.Add(onTickTryConnect)
+        if Events.OnTick then
+            Events.OnTick.Add(onTickTryConnect)
+        end
     end
 end
 
-Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
+if Events.OnMainMenuEnter then
+    Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
+end
 "##;
                 let _ = fs::write(&connect_bridge_path, bridge_lua_content);
 
