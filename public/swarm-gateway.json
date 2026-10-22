@@ -1,4 +1,4 @@
-﻿{
+{
   "gatewayUrl": "https://johnson-dried-equipment-respect.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.7",
-  "minRequiredVersion": "1.1.7",
+  "latestVersion": "1.1.8",
+  "minRequiredVersion": "1.1.8",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "b4361b8ed57dcd98299e62ea8934c6a7f0574635fa70b1625ee57725496235b3",
-  "changelog": "Versión 1.1.7: Corrección de deselección automática de facción, enlace al túnel oficial Cloudflare y sincronización de conteo de facciones en vivo.",
+  "sha256": "bc80dc4ee54be8e3ffc477292bcb02b35a37d6ee0eeff9c94d5375597a5e908e",
+  "changelog": "Versión 1.1.8: Roster de supervivientes (4 slots), límite estricto de personajes y eliminación directa sincronizada con Project Zomboid.",
   "updatedAt": "2026-10-18T05:37:00.000Z"
 }
