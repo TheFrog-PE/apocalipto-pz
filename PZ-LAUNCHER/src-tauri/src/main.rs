@@ -55,6 +55,21 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             let _ = fs::remove_file(zomboid_dir.join("apocalipto_connect.ini"));
             let _ = fs::remove_file(lua_dir.join("apocalipto_connect.ini"));
 
+            // Escribir ticket efímero de conexión única para el launcher
+            let ticket_path = zomboid_dir.join("apocalipto_launch_ticket.ini");
+            let ticket_content = format!(
+                "user={}\nfaction={}\nip={}\nport={}\nserverName=Apocalipto PZ\npassword=12345\n",
+                clean_user, clean_faction, clean_ip, clean_port
+            );
+            let _ = fs::write(&ticket_path, &ticket_content);
+
+            // Eliminar automáticamente el ticket tras 15 segundos para máxima seguridad
+            let ticket_cleanup = ticket_path.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(15));
+                let _ = fs::remove_file(ticket_cleanup);
+            });
+
             // Inyectar en bases de datos SQLite locales de Project Zomboid (Favoritos automáticos)
             let db_dir = zomboid_dir.join("db");
             let _ = fs::create_dir_all(&db_dir);
@@ -438,6 +453,108 @@ end)
 "##;
                 let _ = fs::write(&faction_sync_path, lua_sync_content);
 
+                // Auto-desplegar ApocaliptoConnectBridge.lua: Puente de conexión directa ultra-seguro
+                let connect_bridge_path = pz_dir.join("media").join("lua").join("client").join("ApocaliptoConnectBridge.lua");
+                let bridge_lua_content = r##"-- [APOCALIPTO PZ] Puente de Conexión Automática Seguro para Launcher
+local ticketChecked = false
+local pendingTicket = nil
+local tickAttempts = 0
+
+local function doApocaliptoConnect(ticket)
+    if not ticket or not ticket.user or ticket.user == "" then return false end
+    local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+    local mainScreen = MainScreen and MainScreen.instance
+
+    if connectUI and mainScreen then
+        print("[APOCALIPTO PZ] Conectando directamente como '" .. tostring(ticket.user) .. "' (" .. tostring(ticket.faction or "DOE") .. ") a " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port or 16261))
+        
+        if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+        _G.ApocaliptoSession.faction = ticket.faction or "DOE"
+        _G.ApocaliptoSession.user = ticket.user
+        _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+        if mainScreen.bottomPanel then
+            mainScreen.bottomPanel:setVisible(false)
+        end
+        if mainScreen.animPopup then
+            mainScreen.animPopup:removeFromUIManager()
+        end
+
+        connectUI:connect(
+            mainScreen.bottomPanel or mainScreen,
+            ticket.serverName or "Apocalipto PZ",
+            ticket.user,
+            "12345",
+            ticket.ip,
+            "",
+            tostring(ticket.port or 16261),
+            "",
+            false,
+            true,
+            1
+        )
+        return true
+    end
+    return false
+end
+
+local function onTickTryConnect()
+    if not pendingTicket then return end
+    tickAttempts = tickAttempts + 1
+    if doApocaliptoConnect(pendingTicket) or tickAttempts > 60 then
+        pendingTicket = nil
+        Events.OnTick.Remove(onTickTryConnect)
+    end
+end
+
+local function checkApocaliptoLaunchTicket()
+    if ticketChecked then return end
+    ticketChecked = true
+
+    if isClient and isClient() then return end
+    if isIngameState and isIngameState() then return end
+
+    local fname = "apocalipto_launch_ticket.ini"
+    local reader = getFileReader(fname, false)
+    if not reader then return end
+
+    local ticket = {}
+    while true do
+        local line = reader:readLine()
+        if line == nil then break end
+        line = string.trim(line)
+        if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+            local sep = string.find(line, "=")
+            if sep then
+                local k = string.trim(string.sub(line, 1, sep - 1))
+                local v = string.trim(string.sub(line, sep + 1))
+                ticket[k] = v
+            end
+        end
+    end
+    reader:close()
+
+    -- [SEGURIDAD TOTAL] Inmediatamente vaciar el ticket de disco para que NUNCA afecte futuras partidas
+    local eraser = getFileWriter(fname, true, false)
+    if eraser then
+        eraser:close()
+    end
+
+    if not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then
+        return
+    end
+
+    if not doApocaliptoConnect(ticket) then
+        pendingTicket = ticket
+        tickAttempts = 0
+        Events.OnTick.Add(onTickTryConnect)
+    end
+end
+
+Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
+"##;
+                let _ = fs::write(&connect_bridge_path, bridge_lua_content);
+
                 // Asegurar doVideoEffects=true en options.ini para que se muestre el fondo moderno de B42
                 if let Ok(user_profile) = std::env::var("USERPROFILE") {
                     let options_path = std::path::Path::new(&user_profile).join("Zomboid").join("options.ini");
@@ -452,7 +569,7 @@ end)
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
-                    .args(["-connect", &connect_arg, "-password", "12345"])
+                    .args(["+connect", &connect_arg, "+password", "12345"])
                     .spawn();
 
                 if spawn_res.is_ok() {
@@ -467,7 +584,7 @@ end)
             if steam_exe.exists() {
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let res = std::process::Command::new(&steam_exe)
-                    .args(["-applaunch", "108600", "-connect", &connect_arg, "-password", "12345"])
+                    .args(["-applaunch", "108600", "+connect", &connect_arg, "+password", "12345"])
                     .creation_flags(CREATE_NO_WINDOW)
                     .spawn();
                 if res.is_ok() {
@@ -477,7 +594,7 @@ end)
         }
 
         // Fallback 2: Protocolo Steam URI
-        let steam_app_uri = format!("steam://run/108600//-connect%20{}:{}%20-password%2012345", clean_ip, clean_port);
+        let steam_app_uri = format!("steam://run/108600//+connect%20{}:{}%20+password%2012345", clean_ip, clean_port);
         std::process::Command::new("rundll32.exe")
             .args(["url.dll,FileProtocolHandler", &steam_app_uri])
             .creation_flags(CREATE_NO_WINDOW)
