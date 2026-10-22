@@ -160,18 +160,35 @@ async function signWithEd25519(payloadString, privateKeyHex) {
  */
 export async function getOrCreateLocalIdentityAsync() {
   const STORAGE_KEY = 'apocalipto_local_identity_v2';
+  let identity = null;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.nodeId && parsed.publicKey && parsed.privateKey) return parsed;
+      identity = JSON.parse(saved);
     }
   } catch {}
 
-  // Generar par de claves Ed25519 real
-  const identity = await generateEd25519Keypair();
-  identity.steamId = '76561198' + Math.floor(100000000 + Math.random() * 900000000);
-  identity.createdAt = Date.now();
+  if (!identity || !identity.nodeId || !identity.publicKey || !identity.privateKey) {
+    identity = await generateEd25519Keypair();
+    identity.createdAt = Date.now();
+  }
+
+  // 1. Detectar SteamID real, Codigo de Amigo y Cuenta de Steam mediante comando nativo de Tauri
+  try {
+    const { invoke } = await import('@tauri-apps/api/tauri');
+    const steamInfo = await invoke('get_steam_user_identity');
+    if (steamInfo && steamInfo.is_detected) {
+      identity.steamId = steamInfo.steam_id;
+      identity.friendCode = steamInfo.friend_code;
+      identity.accountName = steamInfo.account_name;
+    }
+  } catch (err) {
+    console.warn('Fallback Steam detection:', err);
+  }
+
+  if (!identity.steamId) {
+    identity.steamId = '76561198' + Math.floor(100000000 + Math.random() * 900000000);
+  }
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(identity));
@@ -407,6 +424,8 @@ export async function verifyOrRegisterSwarmAccess(faction = 'DOE', lore = '', fa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           steamId: identity.steamId,
+          friendCode: identity.friendCode || null,
+          accountName: identity.accountName || null,
           faction,
           factionId,
           lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,
@@ -431,6 +450,8 @@ export async function verifyOrRegisterSwarmAccess(faction = 'DOE', lore = '', fa
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 steamId: identity.steamId,
+                friendCode: identity.friendCode || null,
+                accountName: identity.accountName || null,
                 faction,
                 factionId,
                 lore: lore || `Superviviente de ${faction} registrado en el enjambre.`,

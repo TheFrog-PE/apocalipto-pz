@@ -516,7 +516,7 @@ export class SwarmBridgeServer {
       // 3. REGISTRO DE NODO / SOLICITUD DE WHITELIST (Desde el Launcher de cualquier jugador)
       if (req.method === 'POST' && url.pathname === '/api/node/register') {
         this._parseBody(req, res, (body) => {
-          const { steamId, faction, factionId, lore, signedHardwareProof } = body;
+          const { steamId, friendCode, accountName, faction, factionId, lore, signedHardwareProof } = body;
 
           if (!steamId || !signedHardwareProof) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -581,6 +581,8 @@ export class SwarmBridgeServer {
           const applicantRecord = {
             nodeId,
             steamId,
+            friendCode: friendCode || null,
+            accountName: accountName || null,
             faction: faction || 'DOE',
             factionId: factionId || (faction ? faction.toLowerCase() : 'doe'),
             lore: lore || 'Superviviente no afiliado',

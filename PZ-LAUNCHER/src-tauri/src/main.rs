@@ -763,9 +763,92 @@ fn delete_saved_character(username: String) -> Result<bool, String> {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct SteamUserIdentity {
+    pub steam_id: String,
+    pub friend_code: String,
+    pub account_name: String,
+    pub persona_name: String,
+    pub is_detected: bool,
+}
+
+#[tauri::command]
+fn get_steam_user_identity() -> Result<SteamUserIdentity, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let mut friend_code_str = String::new();
+        let mut steam_id_64_str = String::new();
+        let mut account_name_str = String::new();
+
+        if let Ok(output) = std::process::Command::new("reg")
+            .args(["query", r"HKCU\Software\Valve\Steam\ActiveProcess", "/v", "ActiveUser"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout);
+                for line in text.lines() {
+                    if line.contains("ActiveUser") {
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.len() >= 3 {
+                            let hex_str = parts[2].trim_start_matches("0x");
+                            if let Ok(account_id) = u64::from_str_radix(hex_str, 16) {
+                                if account_id > 0 {
+                                    friend_code_str = account_id.to_string();
+                                    steam_id_64_str = (account_id + 76561197960265728).to_string();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Ok(output) = std::process::Command::new("reg")
+            .args(["query", r"HKCU\Software\Valve\Steam", "/v", "AutoLoginUser"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout);
+                for line in text.lines() {
+                    if line.contains("AutoLoginUser") {
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.len() >= 3 {
+                            account_name_str = parts[2..].join(" ");
+                        }
+                    }
+                }
+            }
+        }
+
+        let is_detected = !steam_id_64_str.is_empty();
+        Ok(SteamUserIdentity {
+            steam_id: if is_detected { steam_id_64_str } else { "76561198000000000".into() },
+            friend_code: friend_code_str,
+            account_name: account_name_str.clone(),
+            persona_name: account_name_str,
+            is_detected,
+        })
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(SteamUserIdentity {
+            steam_id: "76561198000000000".into(),
+            friend_code: "".into(),
+            account_name: "".into(),
+            persona_name: "".into(),
+            is_detected: false,
+        })
+    }
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character])
+        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
