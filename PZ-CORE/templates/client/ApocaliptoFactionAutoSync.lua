@@ -7,6 +7,7 @@ local factionColors = {
 }
 
 local function syncApocaliptoFaction(player)
+    if not isClient or not isClient() then return end
     if not player then player = getPlayer() end
     if not player then return end
 
@@ -106,9 +107,9 @@ local function syncApocaliptoFaction(player)
 
     pcall(function()
         if ISMiniMap and ISMiniMap.mapAPI then
-            ISMiniMap.mapAPI:setBoolean("RemotePlayers", true)
-            ISMiniMap.mapAPI:setBoolean("PlayerNames", true)
-            ISMiniMap.mapAPI:setBoolean("MiniMapSymbols", true)
+            pcall(function() ISMiniMap.mapAPI:setBoolean("RemotePlayers", true) end)
+            pcall(function() ISMiniMap.mapAPI:setBoolean("PlayerNames", true) end)
+            pcall(function() ISMiniMap.mapAPI:setBoolean("MiniMapSymbols", true) end)
         end
     end)
 end

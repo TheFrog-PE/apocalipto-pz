@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.1.8",
-  "minRequiredVersion": "1.1.8",
+  "latestVersion": "1.1.9",
+  "minRequiredVersion": "1.1.9",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "bc80dc4ee54be8e3ffc477292bcb02b35a37d6ee0eeff9c94d5375597a5e908e",
-  "changelog": "Versión 1.1.8: Roster de supervivientes (4 slots), límite estricto de personajes y eliminación directa sincronizada con Project Zomboid.",
+  "sha256": "c77643c91d5e989f96972d389f618ebaf096c2f5ef4747c34b0dd06d10fbe0a7",
+  "changelog": "Versión 1.1.9: Corrección de MainScreen.lua, protección total de partidas individuales (Singleplayer), auto-reparación vanilla y whitelist formal de Pugnubi.",
   "updatedAt": "2026-10-18T05:37:00.000Z"
 }
