@@ -214,6 +214,19 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
             _G.ApocaliptoSession = params
 
+            -- 2. Consumir el ticket para que el juego vuelva al menu normal si se abre desde Steam
+            pcall(function()
+                local function wipeTicket(fname)
+                    local writer = getFileWriter(fname, true, false)
+                    if writer then
+                        writer:write("# ticket consumed\n")
+                        writer:close()
+                    end
+                end
+                wipeTicket("apocalipto_connect.ini")
+                wipeTicket("apocalipto_session.ini")
+            end)
+
             local ip = params.ip
             local port = tostring(params.port or "63854")
             local pwd = params.password or "12345"
