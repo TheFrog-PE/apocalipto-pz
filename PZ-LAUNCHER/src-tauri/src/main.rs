@@ -319,10 +319,11 @@ end
                 // Auto-inyectar auto-llenado y conexión directa en ServerConnectPopup.lua para Apocalipto PZ
                 let server_connect_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("ServerConnectPopup.lua");
                 if let Ok(popup_content) = fs::read_to_string(&server_connect_path) {
-                    if !popup_content.contains("Auto-llenado automático de usuario") {
+                    let mut updated_popup = popup_content.clone();
+                    if !updated_popup.contains("Auto-llenado automático de usuario") {
                         let target_str = "function ServerConnectPopup:setServer(ip, port, passwordStr)";
-                        if let Some(pos) = popup_content.find(target_str) {
-                            if let Some(end_pos) = popup_content[pos..].find("function ServerConnectPopup:prerender()") {
+                        if let Some(pos) = updated_popup.find(target_str) {
+                            if let Some(end_pos) = updated_popup[pos..].find("function ServerConnectPopup:prerender()") {
                                 let new_set_server = r#"function ServerConnectPopup:setServer(ip, port, passwordStr)
     if not type(port) == "string" then error "port must be a string" end
     self.ip = ip;
@@ -331,17 +332,13 @@ end
     local servers = getServerList();
     for _,server in ipairs(servers) do
         if server:getIp() == self.ip and tostring(server:getPort()) == tostring(self.port) then
-            self.serverPasswordEntry:setText(server:getServerPassword() or "")
+            self.serverPasswordEntry:setText("")
             self.usernameEntry:setText(server:getUserName() or "")
-            self.passwordEntry:setText(server:getPwd() or "")
+            self.passwordEntry:setText(server:getPwd() or "12345")
             if getSteamModeActive() and self.connectTypeEntry then
                 self.connectTypeEntry.selected[1] = server:getUseSteamRelay()
             end
         end
-    end
-
-    if passwordStr then
-        self.serverPasswordEntry:setText(passwordStr)
     end
 
     -- [APOCALIPTO PZ] Auto-llenado automático de usuario y contraseña desde el slot de superviviente
@@ -373,30 +370,44 @@ end
         end
     end
 
-    local u = self.usernameEntry:getText():trim()
-    local p = self.passwordEntry:getInternalText()
-    if u ~= "" and p ~= "" and (self.ip == "127.0.0.1" or self.ip == "147.185.221.215") then
-        self:checkFields()
-        local localIP = ""
-        local useSteamRelay = false
-        if getSteamModeActive() and self.connectTypeEntry and self.connectTypeEntry.selected[1] then
-            useSteamRelay = true
-        end
-        self:setVisible(false)
-        if MainScreen.instance and MainScreen.instance.bottomPanel then
-            MainScreen.instance.bottomPanel:setVisible(false)
-        end
-        ConnectToServer.instance:connect(self, "Apocalipto PZ", u, p,
-            self.ip, localIP, self.port, self.serverPasswordEntry:getInternalText(), useSteamRelay, true, 1)
-        return
+    if self.ip == "127.0.0.1" or self.ip == "147.185.221.215" then
+        self.serverPasswordEntry:setText("")
     end
 end
 
 "#;
-                                let updated_popup = format!("{}{}{}", &popup_content[..pos], new_set_server, &popup_content[pos + end_pos..]);
-                                let _ = fs::write(&server_connect_path, updated_popup);
+                                updated_popup = format!("{}{}{}", &updated_popup[..pos], new_set_server, &updated_popup[pos + end_pos..]);
                             }
                         }
+                    }
+
+                    if !updated_popup.contains("apocaliptoAutoConnected") {
+                        updated_popup = updated_popup.replace(
+                            "self:checkFields()\n",
+                            r#"self:checkFields()
+
+    -- [APOCALIPTO PZ] Auto-conexión automática sin requerir clic manual
+    if not self.apocaliptoAutoConnected and (self.ip == "127.0.0.1" or self.ip == "147.185.221.215") then
+        local u = self.usernameEntry:getText():trim()
+        if u ~= "" then
+            self.apocaliptoAutoConnected = true
+            self.serverPasswordEntry:setText("")
+            self.passwordEntry:setText("12345")
+            if self.checkFields then self:checkFields() end
+            self:onOptionMouseDown(self.connectBtn, 0, 0)
+            return
+        end
+    end
+"#
+                        );
+
+                        let old_connect_line = "ConnectToServer.instance:connect(self, \"\", self.usernameEntry:getText(), self.passwordEntry:getInternalText(),\n                self.ip, localIP, self.port, self.serverPasswordEntry:getInternalText(), useSteamRelay, true, 1);";
+                        let new_connect_line = "local sPwd = (self.ip == \"127.0.0.1\" or self.ip == \"147.185.221.215\") and \"\" or self.serverPasswordEntry:getInternalText();\n            ConnectToServer.instance:connect(self, \"\", self.usernameEntry:getText(), self.passwordEntry:getInternalText(),\n                self.ip, localIP, self.port, sPwd, useSteamRelay, true, 1);";
+                        updated_popup = updated_popup.replace(old_connect_line, new_connect_line);
+                    }
+
+                    if updated_popup != popup_content {
+                        let _ = fs::write(&server_connect_path, updated_popup);
                     }
                 }
 
@@ -728,7 +739,7 @@ end
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
-                    .args(["+connect", &connect_arg, "+password", "12345"])
+                    .args(["+connect", &connect_arg])
                     .spawn();
 
                 if spawn_res.is_ok() {
@@ -743,7 +754,7 @@ end
             if steam_exe.exists() {
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
                 let res = std::process::Command::new(&steam_exe)
-                    .args(["-applaunch", "108600", "+connect", &connect_arg, "+password", "12345"])
+                    .args(["-applaunch", "108600", "+connect", &connect_arg])
                     .creation_flags(CREATE_NO_WINDOW)
                     .spawn();
                 if res.is_ok() {
@@ -753,7 +764,7 @@ end
         }
 
         // Fallback 2: Protocolo Steam URI
-        let steam_app_uri = format!("steam://run/108600//+connect%20{}:{}%20+password%2012345", clean_ip, clean_port);
+        let steam_app_uri = format!("steam://run/108600//+connect%20{}:{}", clean_ip, clean_port);
         std::process::Command::new("rundll32.exe")
             .args(["url.dll,FileProtocolHandler", &steam_app_uri])
             .creation_flags(CREATE_NO_WINDOW)
