@@ -341,12 +341,10 @@ export default function App() {
   };
 
   const handleResetFaction = async () => {
-    if (savedCharacters.length >= 4) {
-      handleShowToast({
-        title: 'LÍMITE DE SUPERVIVIENTES (4/4)',
-        desc: 'No puedes crear otro superviviente porque tienes 4/4 slots ocupados. Elimina un personaje existente del roster para crear uno nuevo.',
-        type: 'warning'
-      });
+    // Si hay un personaje guardado activo en un slot, eliminarlo del slot y del juego directamente
+    const activeChar = savedCharacters.find(c => c.username.toLowerCase() === (survivorName || '').toLowerCase().trim());
+    if (activeChar) {
+      await handleDeleteCharacter(activeChar.username);
       return;
     }
     try {
@@ -542,7 +540,7 @@ export default function App() {
         alfaStatus={alfaStatus}
       />
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6 w-full max-w-6xl mx-auto">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-6 w-full max-w-[1380px] mx-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'facciones' && (
             <FactionsTab
