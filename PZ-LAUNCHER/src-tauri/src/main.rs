@@ -316,13 +316,86 @@ end
                     }
                 }
 
-                // Auto-reparar ServerConnectPopup.lua: Limpiar cualquier hook residual para asegurar estabilidad total
+                // Auto-inyectar auto-llenado y conexión directa en ServerConnectPopup.lua para Apocalipto PZ
                 let server_connect_path = pz_dir.join("media").join("lua").join("client").join("OptionScreens").join("ServerConnectPopup.lua");
                 if let Ok(popup_content) = fs::read_to_string(&server_connect_path) {
-                    if popup_content.contains("-- [APOCALIPTO PZ]") {
-                        if let Some(idx) = popup_content.find("-- [APOCALIPTO PZ]") {
-                            let clean_popup = popup_content[..idx].trim_end().to_string() + "\n";
-                            let _ = fs::write(&server_connect_path, clean_popup);
+                    if !popup_content.contains("Auto-llenado automático de usuario") {
+                        let target_str = "function ServerConnectPopup:setServer(ip, port, passwordStr)";
+                        if let Some(pos) = popup_content.find(target_str) {
+                            if let Some(end_pos) = popup_content[pos..].find("function ServerConnectPopup:prerender()") {
+                                let new_set_server = r#"function ServerConnectPopup:setServer(ip, port, passwordStr)
+    if not type(port) == "string" then error "port must be a string" end
+    self.ip = ip;
+    self.port = port;
+
+    local servers = getServerList();
+    for _,server in ipairs(servers) do
+        if server:getIp() == self.ip and tostring(server:getPort()) == tostring(self.port) then
+            self.serverPasswordEntry:setText(server:getServerPassword() or "")
+            self.usernameEntry:setText(server:getUserName() or "")
+            self.passwordEntry:setText(server:getPwd() or "")
+            if getSteamModeActive() and self.connectTypeEntry then
+                self.connectTypeEntry.selected[1] = server:getUseSteamRelay()
+            end
+        end
+    end
+
+    if passwordStr then
+        self.serverPasswordEntry:setText(passwordStr)
+    end
+
+    -- [APOCALIPTO PZ] Auto-llenado automático de usuario y contraseña desde el slot de superviviente
+    if self.usernameEntry:getText():trim() == "" then
+        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or nil
+        if not uName or uName == "" then
+            pcall(function()
+                local reader = getFileReader("apocalipto_launch_ticket.ini", false)
+                if reader then
+                    while true do
+                        local line = reader:readLine()
+                        if line == nil then break end
+                        line = string.trim(line)
+                        local sep = string.find(line, "=")
+                        if sep then
+                            local k = string.trim(string.sub(line, 1, sep - 1))
+                            local v = string.trim(string.sub(line, sep + 1))
+                            if k == "user" and v ~= "" then uName = v end
+                        end
+                    end
+                    reader:close()
+                end
+            end)
+        end
+        if uName and uName ~= "" then
+            self.usernameEntry:setText(uName)
+            self.passwordEntry:setText("12345")
+            self.serverPasswordEntry:setText("")
+        end
+    end
+
+    local u = self.usernameEntry:getText():trim()
+    local p = self.passwordEntry:getInternalText()
+    if u ~= "" and p ~= "" and (self.ip == "127.0.0.1" or self.ip == "147.185.221.215") then
+        self:checkFields()
+        local localIP = ""
+        local useSteamRelay = false
+        if getSteamModeActive() and self.connectTypeEntry and self.connectTypeEntry.selected[1] then
+            useSteamRelay = true
+        end
+        self:setVisible(false)
+        if MainScreen.instance and MainScreen.instance.bottomPanel then
+            MainScreen.instance.bottomPanel:setVisible(false)
+        end
+        ConnectToServer.instance:connect(self, "Apocalipto PZ", u, p,
+            self.ip, localIP, self.port, self.serverPasswordEntry:getInternalText(), useSteamRelay, true, 1)
+        return
+    end
+end
+
+"#;
+                                let updated_popup = format!("{}{}{}", &popup_content[..pos], new_set_server, &popup_content[pos + end_pos..]);
+                                let _ = fs::write(&server_connect_path, updated_popup);
+                            }
                         }
                     }
                 }
