@@ -771,3 +771,113 @@ export async function getAlfaStatus() {
     return { alfaEngineActive: false, alfaNodeId: null };
   }
 }
+
+
+/**
+ * Guarda el mapeo de faccion de un personaje en localStorage
+ */
+export function recordCharacterFaction(username, factionId) {
+  if (!username || !factionId) return;
+  try {
+    let map = {};
+    const raw = localStorage.getItem('apocalipto_char_factions');
+    if (raw) map = JSON.parse(raw);
+    map[username.trim()] = factionId.toLowerCase();
+    localStorage.setItem('apocalipto_char_factions', JSON.stringify(map));
+  } catch {}
+}
+
+/**
+ * Obtiene la lista de personajes guardados para Apocalipto PZ.
+ * En entorno Tauri, lee las bases de datos locales ServerListSteam.db y ServerList.db.
+ * En navegador (fallback), lee de localStorage.
+ * Cada personaje incluye: id, server_id, username, player_name, time_played, last_logon, factionId, factionTag.
+ */
+export async function fetchSavedCharacters() {
+  let characters = [];
+
+  // 1. Intentar Tauri invoke nativo
+  try {
+    const { invoke } = await import('@tauri-apps/api/tauri');
+    const result = await invoke('get_saved_characters');
+    if (Array.isArray(result)) {
+      characters = result;
+    }
+  } catch (err) {
+    // Modo navegador o fallback
+    try {
+      const raw = localStorage.getItem('apocalipto_browser_characters');
+      if (raw) characters = JSON.parse(raw);
+    } catch {}
+  }
+
+  // 2. Asociar faccion guardada o inferir por tag/nombre
+  let factionMap = {};
+  try {
+    const rawMap = localStorage.getItem('apocalipto_char_factions');
+    if (rawMap) factionMap = JSON.parse(rawMap);
+  } catch {}
+
+  const enriched = characters.map(ch => {
+    let fid = factionMap[ch.username];
+    if (!fid) {
+      const u = ch.username.toLowerCase();
+      if (u.includes('kto') || u.endsWith('_kto')) fid = 'kto';
+      else if (u.includes('mok') || u.endsWith('_mok')) fid = 'mok';
+      else if (u.includes('doe') || u.endsWith('_doe')) fid = 'doe';
+      else if (u.includes('riv') || u.endsWith('_riv')) fid = 'riv';
+      else fid = 'doe';
+    }
+    return {
+      ...ch,
+      factionId: fid.toLowerCase(),
+      factionTag: fid.toUpperCase()
+    };
+  });
+
+  return enriched;
+}
+
+/**
+ * Elimina un personaje tanto de SQLite local de PZ como de la Whitelist del servidor.
+ */
+export async function removeSavedCharacter(username) {
+  if (!username) return false;
+  const cleanUser = username.trim();
+
+  // 1. Llamar a comando nativo Tauri para borrar de ServerListSteam.db y ServerList.db
+  try {
+    const { invoke } = await import('@tauri-apps/api/tauri');
+    await invoke('delete_saved_character', { username: cleanUser });
+  } catch (err) {
+    console.warn('Native delete_saved_character fallback:', err);
+  }
+
+  // 2. Limpiar de localStorage (browser fallback & faction map)
+  try {
+    const raw = localStorage.getItem('apocalipto_browser_characters');
+    if (raw) {
+      const list = JSON.parse(raw).filter(c => c.username !== cleanUser);
+      localStorage.setItem('apocalipto_browser_characters', JSON.stringify(list));
+    }
+    const rawMap = localStorage.getItem('apocalipto_char_factions');
+    if (rawMap) {
+      const map = JSON.parse(rawMap);
+      delete map[cleanUser];
+      localStorage.setItem('apocalipto_char_factions', JSON.stringify(map));
+    }
+  } catch {}
+
+  // 3. Notificar al Bridge para que tambien lo limpie de la whitelist de Project Zomboid (SQLite + RCON)
+  try {
+    const bridgeUrl = getSwarmBridgeUrl();
+    await fetch(`${bridgeUrl}/api/admin/whitelist/clear-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: cleanUser }),
+      signal: AbortSignal.timeout(3000)
+    });
+  } catch {}
+
+  return true;
+}

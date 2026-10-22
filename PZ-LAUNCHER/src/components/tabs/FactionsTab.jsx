@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Users, Play, User, Zap, MapPin } from 'lucide-react';
+import { 
+  Download, Users, Play, User, Zap, MapPin, 
+  Trash2, UserPlus, Check, AlertTriangle, Clock 
+} from 'lucide-react';
 
 export default function FactionsTab({ 
   factions, 
@@ -15,8 +18,13 @@ export default function FactionsTab({
   updateInfo,
   onUpdateLauncher,
   perfMode = true,
-  onTogglePerfMode
+  onTogglePerfMode,
+  savedCharacters = [],
+  onSelectCharacter,
+  onDeleteCharacter,
+  onStartNewCharacter
 }) {
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const activeLock = (chosenFaction || approvedFaction || selectedFaction || '').toLowerCase() || null;
   const currentFaction = factions.find(f => f.id === activeLock) || factions[0];
 
@@ -38,6 +46,194 @@ export default function FactionsTab({
         <p className="text-sm text-zinc-300 font-light tracking-wide font-mono drop-shadow">
           14 días después de la infección, todo empeoró
         </p>
+      </div>
+
+            {/* Roster de Supervivientes (Limite Maximo 4 Personajes) */}
+      <div className="w-full mb-8 bg-[#0c0c0e]/95 border border-zinc-800/90 rounded-2xl p-4 md:p-5 shadow-2xl backdrop-blur-md">
+        {/* Encabezado del Roster */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800 text-zinc-300">
+              <Users className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-xs font-mono uppercase font-black tracking-wider text-zinc-200 flex items-center gap-2">
+                <span>TUS SUPERVIVIENTES // APOCALIPTO PZ</span>
+                <span className="text-[10px] text-zinc-500 font-normal font-sans">(Project Zomboid B42)</span>
+              </h3>
+              <p className="text-[10px] text-zinc-400 font-mono">
+                Maximo 4 personajes por jugador. Selecciona uno para jugar o elimina para liberar un slot.
+              </p>
+            </div>
+          </div>
+
+          {/* Contador de Slots */}
+          <div className="flex items-center gap-2">
+            {savedCharacters.length >= 4 ? (
+              <span className="px-3 py-1 bg-red-950/80 border border-red-500/70 text-red-300 rounded-full font-mono text-[10px] font-black tracking-wider flex items-center gap-1.5 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse">
+                <AlertTriangle className="w-3 h-3 text-red-400" />
+                4 / 4 SLOTS (LIMITE ALCANZADO)
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-emerald-950/70 border border-emerald-500/60 text-emerald-300 rounded-full font-mono text-[10px] font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                {savedCharacters.length} / 4 SLOTS OCUPADOS ({4 - savedCharacters.length} DISPONIBLES)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Grid de 4 Slots */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+          {[0, 1, 2, 3].map((slotIdx) => {
+            const char = savedCharacters[slotIdx];
+            if (char) {
+              const isCurrentActive = survivorName && survivorName.trim().toLowerCase() === char.username.toLowerCase();
+              const factionObj = factions.find(f => f.id === char.factionId) || factions[0];
+              const isDeleting = deleteTarget === char.username;
+
+              return (
+                <div
+                  key={char.username || slotIdx}
+                  className={`relative flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-200 ${
+                    isCurrentActive
+                      ? 'bg-gradient-to-b from-[#18181c] to-[#121214] border-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/60'
+                      : 'bg-[#121214]/90 border-zinc-800 hover:border-zinc-700 hover:bg-[#151518]'
+                  }`}
+                >
+                  {/* Top Bar: Slot & Faction badge */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-mono font-bold tracking-wider text-zinc-500">
+                      SLOT 0{slotIdx + 1}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold border ${factionObj?.activeBadge || 'bg-zinc-800 border-zinc-700 text-zinc-300'}`}>
+                      {factionObj?.tag || char.factionTag}
+                    </span>
+                  </div>
+
+                  {/* Character Info */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isCurrentActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+                      <h4 className="text-xs font-mono font-black text-zinc-100 truncate" title={char.username}>
+                        {char.username}
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-zinc-500" />
+                        {char.time_played > 0 ? `${char.time_played} min` : 'Recien creado'}
+                      </span>
+                      {char.last_logon && (
+                        <span className="truncate text-zinc-500 text-[9px]" title={char.last_logon}>
+                          • {char.last_logon.split(' ')[0]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions / Delete Confirm */}
+                  {isDeleting ? (
+                    <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-red-900/60 bg-red-950/40 p-2 rounded-lg">
+                      <span className="text-[9px] font-mono font-bold text-red-300 flex-1">
+                        BORRAR?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDeleteCharacter && onDeleteCharacter(char.username);
+                          setDeleteTarget(null);
+                        }}
+                        className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded font-mono text-[9px] font-bold uppercase transition-all shadow cursor-pointer"
+                      >
+                        SI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(null)}
+                        className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded font-mono text-[9px] font-bold uppercase transition-all cursor-pointer"
+                      >
+                        NO
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => onSelectCharacter && onSelectCharacter(char)}
+                        className={`flex-1 py-1.5 px-2 rounded-lg font-mono text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          isCurrentActive
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 hover:border-zinc-500 active:scale-95'
+                        }`}
+                      >
+                        {isCurrentActive ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span>ACTIVO</span>
+                          </>
+                        ) : (
+                          <span>SELECCIONAR</span>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(char.username)}
+                        className="p-1.5 rounded-lg bg-zinc-900 hover:bg-red-950/80 border border-zinc-800 hover:border-red-600/60 text-zinc-400 hover:text-red-400 transition-all cursor-pointer"
+                        title="Eliminar este superviviente del juego y liberar 1 slot"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Slot Vacio o Boton de Creacion
+            const isNextAvailableSlot = slotIdx === savedCharacters.length;
+            return (
+              <div
+                key={slotIdx}
+                onClick={() => {
+                  if (isNextAvailableSlot && onStartNewCharacter) {
+                    onStartNewCharacter();
+                  }
+                }}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border border-dashed transition-all duration-200 min-h-[110px] ${
+                  isNextAvailableSlot
+                    ? 'border-amber-500/50 bg-amber-950/10 hover:bg-amber-950/20 hover:border-amber-400 text-amber-400/90 cursor-pointer group shadow-sm hover:scale-[1.02]'
+                    : 'border-zinc-800/60 bg-zinc-950/30 text-zinc-600 cursor-not-allowed select-none'
+                }`}
+              >
+                {isNextAvailableSlot ? (
+                  <>
+                    <div className="p-2 rounded-full bg-amber-500/10 border border-amber-500/30 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all mb-1.5">
+                      <UserPlus className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300">
+                      + CREAR SUPERVIVIENTE
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-0.5">
+                      Slot 0{slotIdx + 1} libre
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[10px] font-mono font-bold tracking-wider text-zinc-600 uppercase">
+                      SLOT 0{slotIdx + 1} // VACIO
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-700 mt-0.5">
+                      Disponible
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Grid de Facciones: Una vez elegida una faccion, las demas se bloquean */}

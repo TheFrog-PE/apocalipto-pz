@@ -764,9 +764,115 @@ fn apply_update(binary_data_base64: String, expected_sha256: String) -> Result<S
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct SavedCharacter {
+    pub id: i64,
+    pub server_id: i64,
+    pub username: String,
+    pub player_name: Option<String>,
+    pub time_played: i64,
+    pub last_logon: Option<String>,
+}
+
+#[tauri::command]
+fn get_saved_characters() -> Result<Vec<SavedCharacter>, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let mut characters: Vec<SavedCharacter> = Vec::new();
+        let mut seen_usernames = std::collections::HashSet::new();
+
+        if let Some(user_profile) = std::env::var_os("USERPROFILE") {
+            let db_dir = PathBuf::from(&user_profile).join("Zomboid").join("db");
+            // Check ServerListSteam.db first (primary for Steam PZ), then ServerList.db
+            for db_name in &["ServerListSteam.db", "ServerList.db"] {
+                let db_path = db_dir.join(db_name);
+                if !db_path.exists() {
+                    continue;
+                }
+                if let Ok(conn) = rusqlite::Connection::open(&db_path) {
+                    let server_id: Option<i64> = conn
+                        .query_row(
+                            "SELECT id FROM server WHERE name = 'Apocalipto PZ'",
+                            [],
+                            |row| row.get(0),
+                        )
+                        .ok();
+
+                    if let Some(sid) = server_id {
+                        if let Ok(mut stmt) = conn.prepare(
+                            "SELECT id, serverId, username, playerFirstAndLastName, timePlayed, lastLogon 
+                             FROM account 
+                             WHERE serverId = ?1 
+                             ORDER BY id DESC"
+                        ) {
+                            let rows = stmt.query_map([sid], |row| {
+                                Ok(SavedCharacter {
+                                    id: row.get(0)?,
+                                    server_id: row.get(1)?,
+                                    username: row.get(2)?,
+                                    player_name: row.get(3)?,
+                                    time_played: row.get::<_, Option<i64>>(4)?.unwrap_or(0),
+                                    last_logon: row.get(5)?,
+                                })
+                            });
+
+                            if let Ok(char_iter) = rows {
+                                for ch in char_iter.flatten() {
+                                    if !seen_usernames.contains(&ch.username) {
+                                        seen_usernames.insert(ch.username.clone());
+                                        characters.push(ch);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(characters)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(Vec::new())
+    }
+}
+
+#[tauri::command]
+fn delete_saved_character(username: String) -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let clean_user = username.trim().to_string();
+        if clean_user.is_empty() {
+            return Err("Nombre de usuario vacío".into());
+        }
+
+        if let Some(user_profile) = std::env::var_os("USERPROFILE") {
+            let db_dir = PathBuf::from(&user_profile).join("Zomboid").join("db");
+            for db_name in &["ServerListSteam.db", "ServerList.db"] {
+                let db_path = db_dir.join(db_name);
+                if db_path.exists() {
+                    if let Ok(conn) = rusqlite::Connection::open(&db_path) {
+                        let _ = conn.execute(
+                            "DELETE FROM account 
+                             WHERE username = ?1 
+                             AND serverId IN (SELECT id FROM server WHERE name = 'Apocalipto PZ')",
+                            rusqlite::params![clean_user],
+                        );
+                    }
+                }
+            }
+        }
+        Ok(true)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(true)
+    }
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update])
+        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

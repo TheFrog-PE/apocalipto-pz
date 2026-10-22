@@ -18,7 +18,7 @@ import factionsBg from './assets/apocalipto-pz-facciones.webp';
 import newsBg from './assets/publicaciones-bg-pz.webp';
 import contactBg from './assets/contacto-bg-pz.webp';
 
-import { getSavedPermanentTicket, savePermanentTicket, getSwarmBridgeUrl, getOrCreateLocalIdentity, launchProjectZomboid, activateAlfaEngine, getAlfaStatus, resetSwarmCharacter, setSwarmNodeFaction } from './services/swarmClient';
+import { getSavedPermanentTicket, savePermanentTicket, getSwarmBridgeUrl, getOrCreateLocalIdentity, launchProjectZomboid, activateAlfaEngine, getAlfaStatus, resetSwarmCharacter, setSwarmNodeFaction, fetchSavedCharacters, removeSavedCharacter, recordCharacterFaction } from './services/swarmClient';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('facciones');
@@ -101,6 +101,86 @@ export default function App() {
 
   // Estado del Motor de Failover Alfa — indica si este nodo está emitiendo heartbeats P2P
   const [alfaStatus, setAlfaStatus] = useState({ alfaEngineActive: false, alfaNodeId: null });
+
+  // Supervivientes guardados en SQLite de Project Zomboid (ServerListSteam.db / ServerList.db)
+  const [savedCharacters, setSavedCharacters] = useState([]);
+
+  const loadCharacters = async () => {
+    try {
+      const chars = await fetchSavedCharacters();
+      setSavedCharacters(chars || []);
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadCharacters();
+    const interval = setInterval(loadCharacters, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSelectCharacter = (char) => {
+    if (!char) return;
+    setSurvivorName(char.username);
+    try { localStorage.setItem('pz_survivor_name', char.username); } catch {}
+    
+    if (char.factionId) {
+      const fid = char.factionId.toLowerCase();
+      setChosenFaction(fid);
+      setApprovedFaction(fid);
+      try { localStorage.setItem('apocalipto_chosen_faction', fid); } catch {}
+    }
+    handleShowToast({
+      title: 'SUPERVIVIENTE SELECCIONADO',
+      desc: `Listo para jugar como ${char.username} (${char.factionTag || 'APOCALIPTO'}).`,
+      type: 'success'
+    });
+  };
+
+  const handleDeleteCharacter = async (username) => {
+    if (!username) return;
+    const ok = await removeSavedCharacter(username);
+    if (ok) {
+      handleShowToast({
+        title: 'SUPERVIVIENTE ELIMINADO',
+        desc: `"${username}" ha sido eliminado de tu lista y del servidor. 1 slot liberado.`,
+        type: 'info'
+      });
+      if ((survivorName || '').trim().toLowerCase() === username.trim().toLowerCase()) {
+        setSurvivorName('');
+        setChosenFaction(null);
+        setApprovedFaction(null);
+        try {
+          localStorage.removeItem('pz_survivor_name');
+          localStorage.removeItem('apocalipto_chosen_faction');
+        } catch {}
+      }
+      await loadCharacters();
+    }
+  };
+
+  const handleStartNewCharacter = () => {
+    if (savedCharacters.length >= 4) {
+      handleShowToast({
+        title: 'LÍMITE ALCANZADO (4/4 SLOTS)',
+        desc: 'Tienes el máximo de 4 supervivientes creados. Elimina uno de la lista para crear uno nuevo.',
+        type: 'warning'
+      });
+      return;
+    }
+    setChosenFaction(null);
+    setApprovedFaction(null);
+    setSurvivorName('');
+    try {
+      localStorage.removeItem('apocalipto_chosen_faction');
+      localStorage.removeItem('pz_survivor_name');
+    } catch {}
+    handleShowToast({
+      title: 'CREAR NUEVO SUPERVIVIENTE',
+      desc: 'Facciones desbloqueadas. Selecciona una facción y asigna el nombre de tu nuevo personaje.',
+      type: 'info'
+    });
+  };
+
 
   // Estado de actualización del Launcher (semver check automático con GitHub)
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -261,6 +341,14 @@ export default function App() {
   };
 
   const handleResetFaction = async () => {
+    if (savedCharacters.length >= 4) {
+      handleShowToast({
+        title: 'LÍMITE DE SUPERVIVIENTES (4/4)',
+        desc: 'No puedes crear otro superviviente porque tienes 4/4 slots ocupados. Elimina un personaje existente del roster para crear uno nuevo.',
+        type: 'warning'
+      });
+      return;
+    }
     try {
       localStorage.removeItem('apocalipto_admission_ticket');
       localStorage.removeItem('apocalipto_chosen_faction');
@@ -275,8 +363,8 @@ export default function App() {
     setSurvivorName('');
     setShowLaunchModal(false);
     handleShowToast({
-      title: 'PERSONAJE REINICIADO',
-      desc: 'Has reiniciado tu personaje. Las 4 facciones se han desbloqueado. Elige tu nueva facción.',
+      title: 'SELECCIÓN REINICIADA',
+      desc: 'Has reiniciado la selección. Las 4 facciones se han desbloqueado. Elige tu nueva facción.',
       type: 'info'
     });
   };
@@ -342,12 +430,23 @@ export default function App() {
         ? survivorName.trim()
         : `Superviviente_${selectedFactionData.tag}`;
 
+      const isExisting = savedCharacters.some(c => c.username.toLowerCase() === finalPlayerName.toLowerCase());
+      if (!isExisting && savedCharacters.length >= 4) {
+        handleShowToast({
+          title: 'LÍMITE ALCANZADO (4/4 SLOTS)',
+          desc: 'No puedes crear un 5to superviviente. Selecciona uno existente del roster o elimina uno para crear uno nuevo.',
+          type: 'warning'
+        });
+        return;
+      }
+
       handleShowToast({
         title: 'INICIANDO PROJECT ZOMBOID',
         desc: `Conectando directo al servidor como ${finalPlayerName}...`,
         type: 'success'
       });
       const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
+      await loadCharacters();
       if (res.success) {
         // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
         // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
@@ -461,6 +560,10 @@ export default function App() {
               onUpdateLauncher={handleUpdateLauncher}
               perfMode={perfMode}
               onTogglePerfMode={handleTogglePerfMode}
+              savedCharacters={savedCharacters}
+              onSelectCharacter={handleSelectCharacter}
+              onDeleteCharacter={handleDeleteCharacter}
+              onStartNewCharacter={handleStartNewCharacter}
             />
           )}
           {activeTab === 'publicaciones' && (
