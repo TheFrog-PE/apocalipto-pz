@@ -387,7 +387,8 @@ end
                             r#"self:checkFields()
 
     -- [APOCALIPTO PZ] Auto-conexión automática sin requerir clic manual
-    if not self.apocaliptoAutoConnected and (self.ip == "127.0.0.1" or self.ip == "147.185.221.215") then
+    local isApoc = (self.ip == "127.0.0.1" or self.ip == "147.185.221.215" or (self.ip and (string.find(self.ip, "ply.gg") or string.find(self.ip, "tun") or string.find(self.ip, "apocalipto"))))
+    if not self.apocaliptoAutoConnected and isApoc then
         local u = self.usernameEntry:getText():trim()
         if u ~= "" then
             self.apocaliptoAutoConnected = true
@@ -402,7 +403,7 @@ end
                         );
 
                         let old_connect_line = "ConnectToServer.instance:connect(self, \"\", self.usernameEntry:getText(), self.passwordEntry:getInternalText(),\n                self.ip, localIP, self.port, self.serverPasswordEntry:getInternalText(), useSteamRelay, true, 1);";
-                        let new_connect_line = "local sPwd = (self.ip == \"127.0.0.1\" or self.ip == \"147.185.221.215\") and \"\" or self.serverPasswordEntry:getInternalText();\n            ConnectToServer.instance:connect(self, \"\", self.usernameEntry:getText(), self.passwordEntry:getInternalText(),\n                self.ip, localIP, self.port, sPwd, useSteamRelay, true, 1);";
+                        let new_connect_line = "local isApoc = (self.ip == \"127.0.0.1\" or self.ip == \"147.185.221.215\" or (self.ip and (string.find(self.ip, \"ply.gg\") or string.find(self.ip, \"tun\"))));\n            local sPwd = isApoc and \"\" or self.serverPasswordEntry:getInternalText();\n            ConnectToServer.instance:connect(self, \"\", self.usernameEntry:getText(), self.passwordEntry:getInternalText(),\n                self.ip, localIP, self.port, sPwd, useSteamRelay, true, 1);";
                         updated_popup = updated_popup.replace(old_connect_line, new_connect_line);
                     }
 
