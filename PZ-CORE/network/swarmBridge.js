@@ -1909,9 +1909,9 @@ export class SwarmBridgeServer {
     if (!username) return;
     try {
       const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
-      const BCRYPT_12345 = '$2a$12$O/BFHoDFPrfFaNPAACmWpuDEg/if.yPvM8N9H/d4teUaiE1tyDEGu';
       const cleanUser = username.replace(/['"\\]/g, '');
-      const cleanPwd = (password === '12345' || !password) ? BCRYPT_12345 : password.replace(/['"\\]/g, '');
+      const standardHash = '$2a$12$O/BFHoDFPrfFaNPAACmWpuDEg/if.yPvM8N9H/d4teUaiE1tyDEGu';
+      const cleanPwd = standardHash;
       const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
       
       if (fs.existsSync(serverDbPath)) {
@@ -1925,7 +1925,7 @@ export class SwarmBridgeServer {
           }
         }).catch(() => {});
       }
-      console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON.`);
+      console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON con password estándar.`);
     } catch (e) {
       console.warn('[WHITELIST_SYNC] Warning sincronizando whitelist de PZ:', e.message);
     }
