@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Download, Users, Play, User, Zap, MapPin, 
-  Trash2, UserPlus, Check, AlertTriangle, Clock 
+  Trash2, UserPlus, Check, AlertTriangle, Clock, X
 } from 'lucide-react';
 
 export default function FactionsTab({ 
@@ -22,10 +22,16 @@ export default function FactionsTab({
   savedCharacters = [],
   onSelectCharacter,
   onDeleteCharacter,
-  onStartNewCharacter
+  onStartNewCharacter,
+  isCreatingCharacter = false,
+  onCancelNewCharacter
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const activeLock = (chosenFaction || approvedFaction || selectedFaction || '').toLowerCase() || null;
+
+  // En modo creación de nuevo personaje, las demás facciones NO se bloquean
+  const activeLock = isCreatingCharacter 
+    ? (chosenFaction || '').toLowerCase() || null 
+    : (chosenFaction || approvedFaction || selectedFaction || '').toLowerCase() || null;
   const currentFaction = factions.find(f => f.id === activeLock) || factions[0];
 
   return (
@@ -48,6 +54,34 @@ export default function FactionsTab({
         </p>
       </div>
 
+      {/* Banner de Modo Creación Activo */}
+      {isCreatingCharacter && (
+        <div className="w-full max-w-4xl mb-6 p-4 bg-gradient-to-r from-emerald-950/80 via-[#12151e] to-zinc-950 border border-emerald-500/70 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[0_0_25px_rgba(16,185,129,0.25)]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-emerald-300 font-syne uppercase tracking-wider block">
+                MODO CREACIÓN: NUEVO SUPERVIVIENTE (SLOT 0{savedCharacters.length + 1})
+              </span>
+              <span className="text-[11px] text-zinc-300 font-mono">
+                {chosenFaction 
+                  ? `Facción elegida: ${factions.find(f => f.id === chosenFaction)?.name || chosenFaction.toUpperCase()}. Ahora asigna el nombre abajo y entra.`
+                  : 'Paso 1: Haz clic en cualquiera de las 4 facciones para asignarle bando a tu nuevo personaje.'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onCancelNewCharacter}
+            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Cancelar</span>
+          </button>
+        </div>
+      )}
+
       {/* Contenedor Principal: 2 Columnas (Izquierda: Facciones + Config | Derecha: Panel Vertical de Slots) */}
       <div className="w-full flex flex-col lg:flex-row items-start gap-6">
 
@@ -57,7 +91,8 @@ export default function FactionsTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full mb-6">
             {factions.map((faction) => {
               const isSelected = activeLock === faction.id;
-              const isLockedOther = Boolean(activeLock && activeLock !== faction.id);
+              // En modo creación, nunca se bloquean las demás para que el usuario pueda elegir libremente
+              const isLockedOther = !isCreatingCharacter && Boolean(activeLock && activeLock !== faction.id);
               const percentage = Math.min(100, (faction.current / faction.max) * 100);
 
               return (
@@ -157,24 +192,35 @@ export default function FactionsTab({
 
           {/* Campo para Personalizar el Nombre del Superviviente */}
           <div className="w-full max-w-md mb-4 flex flex-col items-center">
-            <label className="text-xs font-mono uppercase text-zinc-300 mb-2 flex items-center gap-1.5 font-bold tracking-wider">
-              <User className="w-3.5 h-3.5 text-amber-500" />
-              <span>NOMBRE DE TU SUPERVIVIENTE:</span>
-            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-xs font-mono uppercase text-zinc-300 flex items-center gap-1.5 font-bold tracking-wider">
+                <User className="w-3.5 h-3.5 text-amber-500" />
+                <span>NOMBRE DE TU SUPERVIVIENTE:</span>
+              </label>
+              {isCreatingCharacter && (
+                <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/50 px-2 py-0.5 rounded-full">
+                  ★ SLOT 0{savedCharacters.length + 1}
+                </span>
+              )}
+            </div>
             <div className="relative w-full">
               <input
                 type="text"
                 value={survivorName || ''}
                 onChange={(e) => onSurvivorNameChange && onSurvivorNameChange(e.target.value.replace(/[^a-zA-Z0-9_\-\s]/g, '').slice(0, 20))}
-                placeholder={`Superviviente_${currentFaction?.tag}`}
-                className="w-full px-5 py-3 bg-[#121214] hover:bg-[#161619] focus:bg-[#18181c] border border-zinc-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 rounded-xl text-zinc-100 font-mono text-sm text-center font-bold tracking-wider outline-none transition-all shadow-inner placeholder:text-zinc-600"
+                placeholder={isCreatingCharacter ? "Ej: MiSuperviviente" : `Superviviente_${currentFaction?.tag}`}
+                className={`w-full px-5 py-3 bg-[#121214] hover:bg-[#161619] focus:bg-[#18181c] border rounded-xl text-zinc-100 font-mono text-sm text-center font-bold tracking-wider outline-none transition-all shadow-inner placeholder:text-zinc-600 ${
+                  isCreatingCharacter 
+                    ? 'border-emerald-500/80 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500/50' 
+                    : 'border-zinc-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50'
+                }`}
               />
             </div>
             <p className="text-[10px] text-zinc-400 font-mono mt-1 text-center">
               Tu alias visible en el servidor. Si se deja en blanco, se usará el tag por defecto.
             </p>
 
-            {savedCharacters.length >= 4 && !savedCharacters.some(c => c.username.toLowerCase() === (survivorName || '').toLowerCase().trim()) && (
+            {savedCharacters.length >= 4 && !isCreatingCharacter && !savedCharacters.some(c => c.username.toLowerCase() === (survivorName || '').toLowerCase().trim()) && (
               <div className="mt-2.5 p-2 bg-red-950/60 border border-red-500/60 rounded-xl text-center flex items-center justify-center gap-1.5 shadow">
                 <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
                 <span className="text-[10px] font-mono text-red-300 font-bold tracking-tight">
@@ -204,27 +250,39 @@ export default function FactionsTab({
                 <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>ACTUALIZAR LAUNCHER // v{updateInfo.latestVersion || 'NUEVA'}</span>
               </button>
+            ) : isCreatingCharacter ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onLaunchGame}
+                  disabled={!chosenFaction}
+                  className={`flex items-center justify-center gap-2 px-8 py-3.5 font-black text-sm tracking-widest uppercase transition-all rounded-xl cursor-pointer ${
+                    chosenFaction
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.5)] hover:scale-[1.02] active:scale-[0.99]'
+                      : 'bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed select-none'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>
+                    {chosenFaction
+                      ? `+ CREAR Y JUGAR COMO ${(survivorName || 'SUPERVIVIENTE').toUpperCase()} // ${currentFaction?.tag}`
+                      : '1. ELIGE UNA FACCIÓN PARA TU NUEVO PERSONAJE'}
+                  </span>
+                </button>
+                <button
+                  onClick={onCancelNewCharacter}
+                  className="px-4 py-3.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white text-xs font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                >
+                  CANCELAR
+                </button>
+              </div>
             ) : activeLock ? (
               <>
                 <button
                   onClick={onLaunchGame}
-                  className={`flex items-center justify-center gap-2 px-8 py-3.5 font-black text-sm tracking-widest uppercase transition-all rounded-xl cursor-pointer ${
-                    approvedFaction
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.45)] hover:scale-[1.02] active:scale-[0.99]'
-                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.65)] hover:scale-[1.02] active:scale-[0.99]'
-                  }`}
+                  className="flex items-center justify-center gap-2 px-8 py-3.5 font-black text-sm tracking-widest uppercase transition-all rounded-xl cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.45)] hover:scale-[1.02] active:scale-[0.99]"
                 >
-                  {approvedFaction ? (
-                    <>
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>EJECUTAR JUEGO (BUILD 42) // {currentFaction?.tag}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 stroke-[2.5]" />
-                      <span>INICIAR SUPERVIVENCIA // {currentFaction?.tag}</span>
-                    </>
-                  )}
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>EJECUTAR JUEGO (BUILD 42) // {currentFaction?.tag}</span>
                 </button>
 
                 <button
@@ -284,19 +342,17 @@ export default function FactionsTab({
         </div>
 
         {/* ── COLUMNA DERECHA: PANEL VERTICAL DE SLOTS DE SUPERVIVIENTES ── */}
-        <div className="w-full lg:w-72 xl:w-80 shrink-0 bg-[#0c0c0e]/95 border border-zinc-800/90 rounded-2xl p-4 shadow-2xl backdrop-blur-md flex flex-col">
-          {/* Encabezado del Dock Vertical */}
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800/80">
+        <div className="w-full lg:w-80 flex flex-col bg-[#0e1017]/95 border border-zinc-800/90 rounded-2xl p-4 shadow-2xl backdrop-blur-md">
+          {/* Header del Panel */}
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-zinc-900 rounded-lg border border-zinc-800 text-amber-500">
-                <Users className="w-4 h-4" />
-              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
               <div>
-                <h3 className="text-xs font-mono uppercase font-black tracking-wider text-zinc-100">
+                <h3 className="text-xs font-mono font-black uppercase tracking-wider text-zinc-200">
                   SLOTS DE SUPERVIVIENTE
                 </h3>
                 <p className="text-[9px] text-zinc-500 font-mono">
-                  Project Zomboid B42
+                  Máximo 4 personajes en simultáneo
                 </p>
               </div>
             </div>
@@ -320,7 +376,7 @@ export default function FactionsTab({
             {[0, 1, 2, 3].map((slotIdx) => {
               const char = savedCharacters[slotIdx];
               if (char) {
-                const isCurrentActive = survivorName && survivorName.trim().toLowerCase() === char.username.toLowerCase();
+                const isCurrentActive = !isCreatingCharacter && survivorName && survivorName.trim().toLowerCase() === char.username.toLowerCase();
                 const factionObj = factions.find(f => f.id === char.factionId) || factions[0];
                 const isDeleting = deleteTarget === char.username;
 
@@ -426,6 +482,8 @@ export default function FactionsTab({
 
               // Slot Vacío o Botón de Creación
               const isNextAvailableSlot = slotIdx === savedCharacters.length;
+              const isThisSlotBeingCreated = isCreatingCharacter && isNextAvailableSlot;
+
               return (
                 <div
                   key={slotIdx}
@@ -434,13 +492,37 @@ export default function FactionsTab({
                       onStartNewCharacter();
                     }
                   }}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border border-dashed transition-all duration-200 min-h-[72px] ${
-                    isNextAvailableSlot
-                      ? 'border-amber-500/50 bg-amber-950/10 hover:bg-amber-950/20 hover:border-amber-400 text-amber-400/90 cursor-pointer group shadow-sm hover:scale-[1.01]'
-                      : 'border-zinc-800/60 bg-zinc-950/30 text-zinc-600 cursor-not-allowed select-none'
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 min-h-[72px] ${
+                    isThisSlotBeingCreated
+                      ? 'border-emerald-500 bg-emerald-950/30 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/40 cursor-default'
+                      : isNextAvailableSlot
+                        ? 'border-dashed border-amber-500/60 bg-amber-950/15 hover:bg-amber-950/30 hover:border-amber-400 text-amber-300 cursor-pointer group shadow-sm hover:scale-[1.02]'
+                        : 'border-dashed border-zinc-800/60 bg-zinc-950/30 text-zinc-600 cursor-not-allowed select-none'
                   }`}
                 >
-                  {isNextAvailableSlot ? (
+                  {isThisSlotBeingCreated ? (
+                    <>
+                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider">
+                          CREANDO EN SLOT 0{slotIdx + 1}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-mono text-zinc-400 mt-0.5">
+                        {chosenFaction ? `Facción: ${chosenFaction.toUpperCase()}` : 'Elige facción a la izquierda'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancelNewCharacter && onCancelNewCharacter();
+                        }}
+                        className="text-[9px] font-mono text-zinc-400 hover:text-red-400 underline mt-1 cursor-pointer"
+                      >
+                        [ Cancelar ]
+                      </button>
+                    </>
+                  ) : isNextAvailableSlot ? (
                     <>
                       <div className="flex items-center gap-1.5 text-amber-300 group-hover:scale-105 transition-all">
                         <UserPlus className="w-3.5 h-3.5 text-amber-400" />
@@ -448,8 +530,8 @@ export default function FactionsTab({
                           + CREAR EN ESTE SLOT
                         </span>
                       </div>
-                      <span className="text-[9px] font-mono text-zinc-500 mt-0.5">
-                        Slot 0{slotIdx + 1} libre (elige facción)
+                      <span className="text-[9px] font-mono text-zinc-400 mt-0.5">
+                        Slot 0{slotIdx + 1} libre (haz clic aquí)
                       </span>
                     </>
                   ) : (

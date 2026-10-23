@@ -158,6 +158,8 @@ export default function App() {
     }
   };
 
+  const [isCreatingCharacter, setIsCreatingCharacter] = useState(false);
+
   const handleStartNewCharacter = () => {
     if (savedCharacters.length >= 4) {
       handleShowToast({
@@ -167,6 +169,7 @@ export default function App() {
       });
       return;
     }
+    setIsCreatingCharacter(true);
     setChosenFaction(null);
     setApprovedFaction(null);
     setSurvivorName('');
@@ -175,10 +178,21 @@ export default function App() {
       localStorage.removeItem('pz_survivor_name');
     } catch {}
     handleShowToast({
-      title: 'CREAR NUEVO SUPERVIVIENTE',
-      desc: 'Facciones desbloqueadas. Selecciona una facción y asigna el nombre de tu nuevo personaje.',
+      title: 'MODO CREACIÓN ACTIVADO',
+      desc: `Creando superviviente en Slot 0${savedCharacters.length + 1}. Elige tu facción a la izquierda.`,
       type: 'info'
     });
+  };
+
+  const handleCancelNewCharacter = () => {
+    setIsCreatingCharacter(false);
+    if (savedCharacters.length > 0) {
+      handleSelectCharacter(savedCharacters[0]);
+    } else {
+      setChosenFaction(null);
+      setApprovedFaction(null);
+      setSurvivorName('');
+    }
   };
 
 
@@ -269,23 +283,22 @@ export default function App() {
           if (statusRes && statusRes.ok) {
             const statusData = await statusRes.json();
             if (statusData.status === 'APPROVED' && statusData.ticket) {
-              const fid = (statusData.ticket.payload?.factionId || statusData.ticket.payload?.faction || '').toLowerCase();
-              if (fid) {
-                savePermanentTicket(statusData.ticket);
-                setApprovedFaction(fid);
-                setChosenFaction(fid);
-              }
-              const ticketUser = statusData.ticket.payload?.username;
-              if (ticketUser) {
-                setSurvivorName(prev => (!prev || prev.startsWith('Superviviente_') ? ticketUser : prev));
-                try {
-                  const currentSaved = localStorage.getItem('pz_survivor_name');
-                  if (!currentSaved || currentSaved.startsWith('Superviviente_')) {
+              if (!isCreatingCharacter && !chosenFaction && savedCharacters.length === 0) {
+                const fid = (statusData.ticket.payload?.factionId || statusData.ticket.payload?.faction || '').toLowerCase();
+                if (fid) {
+                  savePermanentTicket(statusData.ticket);
+                  setApprovedFaction(fid);
+                  setChosenFaction(fid);
+                }
+                const ticketUser = statusData.ticket.payload?.username;
+                if (ticketUser) {
+                  setSurvivorName(ticketUser);
+                  try {
                     localStorage.setItem('pz_survivor_name', ticketUser);
-                  }
-                } catch {}
+                  } catch {}
+                }
               }
-            } else if (statusData.status === 'NOT_FOUND' && approvedFaction) {
+            } else if (statusData.status === 'NOT_FOUND' && approvedFaction && !isCreatingCharacter) {
               // Solo si tenía un ticket de admisión formal que fue revocado por el Creador
               try {
                 localStorage.removeItem('apocalipto_admission_ticket');
@@ -316,17 +329,19 @@ export default function App() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [mouseCoords, setMouseCoords] = useState({ x: -1000, y: -1000 });
 
-  // Selección de facción con bloqueo estricto de las demás
+  // Selección de facción con bloqueo estricto de las demás (excepto si está en modo creación de nuevo personaje)
   const handleSelectFaction = async (factionId) => {
     const fid = (factionId || '').toLowerCase();
-    const activeLock = chosenFaction || approvedFaction;
-    if (activeLock && activeLock !== fid) {
-      handleShowToast({
-        title: '🔒 FACCIÓN BLOQUEADA',
-        desc: 'Para cambiar de facción debes presionar primero "[ ↻ REINICIAR PERSONAJE ]".',
-        type: 'warning'
-      });
-      return;
+    if (!isCreatingCharacter) {
+      const activeLock = chosenFaction || approvedFaction;
+      if (activeLock && activeLock !== fid) {
+        handleShowToast({
+          title: '🔒 FACCIÓN BLOQUEADA',
+          desc: 'Para jugar en otra facción, selecciona otro superviviente de tus slots o crea uno nuevo.',
+          type: 'warning'
+        });
+        return;
+      }
     }
     setChosenFaction(fid);
     try {
@@ -419,58 +434,64 @@ export default function App() {
   const onlineCount = factions.reduce((acc, f) => acc + (f.current || 0), 0);
 
   const handleLaunchGame = async () => {
-    if (!selectedFactionData) return;
-
-    // Si ya está aprobado por el Creador, disparar directamente la ejecución
-    if (approvedFaction) {
-      const localId = getOrCreateLocalIdentity();
-      const finalPlayerName = (survivorName && survivorName.trim().length > 0)
-        ? survivorName.trim()
-        : `Superviviente_${selectedFactionData.tag}`;
-
-      const isExisting = savedCharacters.some(c => c.username.toLowerCase() === finalPlayerName.toLowerCase());
-      if (!isExisting && savedCharacters.length >= 4) {
-        handleShowToast({
-          title: 'LÍMITE ALCANZADO (4/4 SLOTS)',
-          desc: 'No puedes crear un 5to superviviente. Selecciona uno existente del roster o elimina uno para crear uno nuevo.',
-          type: 'warning'
-        });
-        return;
-      }
-
+    if (!selectedFactionData) {
       handleShowToast({
-        title: 'INICIANDO PROJECT ZOMBOID',
-        desc: `Conectando directo al servidor como ${finalPlayerName}...`,
-        type: 'success'
+        title: 'ELIGE UNA FACCIÓN',
+        desc: 'Debes seleccionar una facción antes de iniciar la partida.',
+        type: 'warning'
       });
-      const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
-      await loadCharacters();
-      if (res.success) {
-        // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
-        // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
-        const currentBridge = getSwarmBridgeUrl();
-        const isLocalHost = currentBridge.includes('localhost') || currentBridge.includes('127.0.0.1');
-        if (isLocalHost) {
-          const alfaRes = await activateAlfaEngine(localId.nodeId);
-          if (alfaRes.success) {
-            setAlfaStatus({ alfaEngineActive: true, alfaNodeId: localId.nodeId });
-            handleShowToast({
-              title: '🟢 NODO ALFA ACTIVO',
-              desc: 'Motor de Failover P2P iniciado. Heartbeats cada 5s.',
-              type: 'success'
-            });
-          }
-        }
-        // ───────────────────────────────────────────────────────────────────
-      } else {
-        // Si falló por alguna razón técnica, abrir el modal para diagnóstico
-        setShowLaunchModal(true);
-      }
       return;
     }
 
-    // Si aún no está aprobado, abrir el modal de verificación y aprobación
-    setShowLaunchModal(true);
+    const localId = getOrCreateLocalIdentity();
+    const finalPlayerName = (survivorName && survivorName.trim().length > 0)
+      ? survivorName.trim()
+      : `Superviviente_${selectedFactionData.tag}`;
+
+    const isExisting = savedCharacters.some(c => c.username.toLowerCase() === finalPlayerName.toLowerCase());
+    if (!isExisting && savedCharacters.length >= 4) {
+      handleShowToast({
+        title: 'LÍMITE ALCANZADO (4/4 SLOTS)',
+        desc: 'No puedes crear un 5to superviviente. Selecciona uno existente del roster o elimina uno para crear uno nuevo.',
+        type: 'warning'
+      });
+      return;
+    }
+
+    // Guardar facción del personaje
+    recordCharacterFaction(finalPlayerName, selectedFactionData.id);
+    setApprovedFaction(selectedFactionData.id);
+    setChosenFaction(selectedFactionData.id);
+
+    handleShowToast({
+      title: isCreatingCharacter ? 'CREANDO SUPERVIVIENTE' : 'INICIANDO PROJECT ZOMBOID',
+      desc: `Conectando directo al servidor como ${finalPlayerName} (${selectedFactionData.tag})...`,
+      type: 'success'
+    });
+
+    const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
+    setIsCreatingCharacter(false);
+    await loadCharacters();
+    if (res.success) {
+      // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
+      // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
+      const currentBridge = getSwarmBridgeUrl();
+      const isLocalHost = currentBridge.includes('localhost') || currentBridge.includes('127.0.0.1');
+      if (isLocalHost) {
+        const alfaRes = await activateAlfaEngine(localId.nodeId);
+        if (alfaRes.success) {
+          setAlfaStatus({ alfaEngineActive: true, alfaNodeId: localId.nodeId });
+          handleShowToast({
+            title: '🟢 NODO ALFA ACTIVO',
+            desc: 'Motor de Failover P2P iniciado. Heartbeats cada 5s.',
+            type: 'success'
+          });
+        }
+      }
+      // ───────────────────────────────────────────────────────────────────
+    } else {
+      setShowLaunchModal(true);
+    }
   };
 
   const handleMouseMove = (e) => {
@@ -562,6 +583,8 @@ export default function App() {
               onSelectCharacter={handleSelectCharacter}
               onDeleteCharacter={handleDeleteCharacter}
               onStartNewCharacter={handleStartNewCharacter}
+              isCreatingCharacter={isCreatingCharacter}
+              onCancelNewCharacter={handleCancelNewCharacter}
             />
           )}
           {activeTab === 'publicaciones' && (
