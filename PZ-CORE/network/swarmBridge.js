@@ -1393,6 +1393,7 @@ export class SwarmBridgeServer {
             
             // 1. Escribir en Zomboid raíz
             try {
+              fs.writeFileSync(path.join(zomboidUserDir, 'apocalipto_launch_ticket.ini'), iniContent, 'utf8');
               fs.writeFileSync(path.join(zomboidUserDir, 'apocalipto_connect.ini'), iniContent, 'utf8');
               fs.writeFileSync(path.join(zomboidUserDir, 'apocalipto_session.ini'), iniContent, 'utf8');
             } catch {}
@@ -1401,9 +1402,10 @@ export class SwarmBridgeServer {
             const zomboidLuaDir = path.join(zomboidUserDir, 'Lua');
             try {
               if (!fs.existsSync(zomboidLuaDir)) fs.mkdirSync(zomboidLuaDir, { recursive: true });
+              fs.writeFileSync(path.join(zomboidLuaDir, 'apocalipto_launch_ticket.ini'), iniContent, 'utf8');
               fs.writeFileSync(path.join(zomboidLuaDir, 'apocalipto_connect.ini'), iniContent, 'utf8');
               fs.writeFileSync(path.join(zomboidLuaDir, 'apocalipto_session.ini'), iniContent, 'utf8');
-              console.log(`[GAME LAUNCH] Ticket inyectado para ${userToConnect} (${chosenFaction}) en ${path.join(zomboidLuaDir, 'apocalipto_connect.ini')}`);
+              console.log(`[GAME LAUNCH] Ticket inyectado para ${userToConnect} (${chosenFaction}) en ${path.join(zomboidLuaDir, 'apocalipto_launch_ticket.ini')}`);
             } catch (e) {
               console.error('[GAME LAUNCH] Error escribiendo ticket Lua:', e.message);
             }
@@ -1412,6 +1414,7 @@ export class SwarmBridgeServer {
             const pzInstallDir = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\ProjectZomboid';
             try {
               if (fs.existsSync(pzInstallDir)) {
+                fs.writeFileSync(path.join(pzInstallDir, 'apocalipto_launch_ticket.ini'), iniContent, 'utf8');
                 fs.writeFileSync(path.join(pzInstallDir, 'apocalipto_connect.ini'), iniContent, 'utf8');
                 fs.writeFileSync(path.join(pzInstallDir, 'apocalipto_session.ini'), iniContent, 'utf8');
               }
@@ -1937,11 +1940,15 @@ export class SwarmBridgeServer {
       const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
       
       if (fs.existsSync(serverDbPath)) {
-        const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('SELECT id FROM whitelist WHERE username = ? OR (steamid IS NOT NULL AND steamid != \\'\\' AND steamid = ?)', ('${cleanUser}', '${cleanSteam}')); r = cur.fetchone(); (cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${cleanPwd}', '${cleanSteam}', r[0])) if r else cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid, displayName) VALUES (\\'ApocaliptoPZ\\', ?, ?, 2, 1, ?, ?)', ('${cleanUser}', '${cleanPwd}', '${cleanSteam}', '${cleanUser}'))); conn.commit(); conn.close()"`;
+        const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('SELECT id FROM whitelist WHERE username = ?', ('${cleanUser}',)); r = cur.fetchone(); (cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${cleanPwd}', '${cleanSteam}', r[0])) if r else cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid, displayName) VALUES (\\'ApocaliptoPZ\\', ?, ?, 2, 1, ?, ?)', ('${cleanUser}', '${cleanPwd}', '${cleanSteam}', '${cleanUser}'))); conn.commit(); conn.close()"`;
         exec(pyCmd, () => {});
       }
       if (this.rcon && typeof this.rcon.execute === 'function') {
-        this.rcon.execute(`adduser "${cleanUser}" "12345"`).catch(() => {});
+        this.rcon.execute(`adduser "${cleanUser}" "12345"`).then((res) => {
+          if (res && res.response && res.response.includes('already exists')) {
+            return this.rcon.execute(`setpassword "${cleanUser}" "12345"`);
+          }
+        }).catch(() => {});
       }
       console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON.`);
     } catch (e) {

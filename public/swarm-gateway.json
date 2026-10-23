@@ -9,7 +9,7 @@
   "latestVersion": "1.2.0",
   "minRequiredVersion": "1.2.0",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "d05e8dec7ec4e0e64f22d97061c3364fc20dfbc18d9e22c30c73fee6f58e36a8",
+  "sha256": "1b31add8c44f4a56e562400c0f5f9b3bf9a3f4ab2e3d52d648082dbda07c738e",
   "changelog": "Versión 1.2.0: Rediseño táctico con panel vertical de 4 slots a la derecha, creación independiente por slot en facciones distintas, eliminación sincronizada con Zomboid y cero secuestro de menús en solitario.",
   "updatedAt": "2026-10-23T11:49:12.575Z"
 }

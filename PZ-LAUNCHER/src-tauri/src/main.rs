@@ -55,19 +55,27 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             let _ = fs::remove_file(zomboid_dir.join("apocalipto_connect.ini"));
             let _ = fs::remove_file(lua_dir.join("apocalipto_connect.ini"));
 
-            // Escribir ticket efímero de conexión única para el launcher
+            // Escribir ticket efímero de conexión única para el launcher en todas las ubicaciones de PZ
             let ticket_path = zomboid_dir.join("apocalipto_launch_ticket.ini");
+            let lua_ticket_path = lua_dir.join("apocalipto_launch_ticket.ini");
             let ticket_content = format!(
                 "user={}\nfaction={}\nip={}\nport={}\nserverName=Apocalipto PZ\npassword=12345\n",
                 clean_user, clean_faction, clean_ip, clean_port
             );
             let _ = fs::write(&ticket_path, &ticket_content);
+            let _ = fs::write(&lua_ticket_path, &ticket_content);
+            let _ = fs::write(lua_dir.join("apocalipto_connect.ini"), &ticket_content);
+            let _ = fs::write(lua_dir.join("apocalipto_session.ini"), &ticket_content);
+            let _ = fs::write(zomboid_dir.join("apocalipto_connect.ini"), &ticket_content);
+            let _ = fs::write(zomboid_dir.join("apocalipto_session.ini"), &ticket_content);
 
-            // Eliminar automáticamente el ticket tras 15 segundos para máxima seguridad
+            // Eliminar automáticamente el ticket tras 20 segundos para máxima seguridad
             let ticket_cleanup = ticket_path.clone();
+            let lua_cleanup = lua_ticket_path.clone();
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(15));
+                std::thread::sleep(std::time::Duration::from_secs(20));
                 let _ = fs::remove_file(ticket_cleanup);
+                let _ = fs::remove_file(lua_cleanup);
             });
 
             // Inyectar en bases de datos SQLite locales de Project Zomboid (Favoritos automáticos)
@@ -149,13 +157,13 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
                         if acc_exists.is_err() {
                             let _ = conn.execute(
-                                "INSERT INTO account (serverId, username, password, isSavePassword, isUseSteamRelay, authType)
-                                 VALUES (?1, ?2, '12345', 1, 0, 1)",
+                                "INSERT INTO account (serverId, username, password, isSavePassword, isUseSteamRelay, authType, lastLogon)
+                                 VALUES (?1, ?2, '12345', 1, 0, 1, datetime('now', 'localtime'))",
                                 rusqlite::params![sid, clean_user],
                             );
                         } else {
                             let _ = conn.execute(
-                                "UPDATE account SET password = '12345', isSavePassword = 1, isUseSteamRelay = 0 WHERE serverId = ?1 AND username = ?2",
+                                "UPDATE account SET password = '12345', isSavePassword = 1, isUseSteamRelay = 0, lastLogon = datetime('now', 'localtime') WHERE serverId = ?1 AND username = ?2",
                                 rusqlite::params![sid, clean_user],
                             );
                         }
@@ -341,12 +349,12 @@ end
         end
     end
 
-    -- [APOCALIPTO PZ] Auto-llenado automático de usuario y contraseña desde el slot de superviviente
-    if self.usernameEntry:getText():trim() == "" then
-        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or nil
-        if not uName or uName == "" then
-            pcall(function()
-                local reader = getFileReader("apocalipto_launch_ticket.ini", false)
+    -- [APOCALIPTO PZ] Prioridad absoluta al slot seleccionado en el Launcher
+    local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or nil
+    if not uName or uName == "" then
+        pcall(function()
+            for _, f in ipairs({"apocalipto_launch_ticket.ini", "apocalipto_connect.ini", "apocalipto_session.ini"}) do
+                local reader = getFileReader(f, false)
                 if reader then
                     while true do
                         local line = reader:readLine()
@@ -356,18 +364,19 @@ end
                         if sep then
                             local k = string.trim(string.sub(line, 1, sep - 1))
                             local v = string.trim(string.sub(line, sep + 1))
-                            if k == "user" and v ~= "" then uName = v end
+                            if k == "user" and v ~= "" then uName = v break end
                         end
                     end
                     reader:close()
+                    if uName and uName ~= "" then break end
                 end
-            end)
-        end
-        if uName and uName ~= "" then
-            self.usernameEntry:setText(uName)
-            self.passwordEntry:setText("12345")
-            self.serverPasswordEntry:setText("")
-        end
+            end
+        end)
+    end
+    if uName and uName ~= "" then
+        self.usernameEntry:setText(uName)
+        self.passwordEntry:setText("12345")
+        self.serverPasswordEntry:setText("")
     end
 
     if self.ip == "127.0.0.1" or self.ip == "147.185.221.215" then
