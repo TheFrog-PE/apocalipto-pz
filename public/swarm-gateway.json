@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://routines-paradise-civilization-christine.trycloudflare.com",
+  "gatewayUrl": "https://black-fashion-desert-auto.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -11,5 +11,5 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "d05e8dec7ec4e0e64f22d97061c3364fc20dfbc18d9e22c30c73fee6f58e36a8",
   "changelog": "Versión 1.2.0: Rediseño táctico con panel vertical de 4 slots a la derecha, creación independiente por slot en facciones distintas, eliminación sincronizada con Zomboid y cero secuestro de menús en solitario.",
-  "updatedAt": "2026-10-23T04:15:53.092Z"
+  "updatedAt": "2026-10-23T04:16:34.108Z"
 }
