@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://asia-hidden-oclc-remember.trycloudflare.com",
+  "gatewayUrl": "https://pts-dee-mic-physically.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -11,5 +11,5 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "023d8571a79dad732f76efefe5cb38b09a8a20c6e6bcbd910a2f6ecedf37a13c",
   "changelog": "Versión 1.2.0: Rediseño táctico con panel vertical de 4 slots a la derecha, creación independiente por slot en facciones distintas, eliminación sincronizada con Zomboid y cero secuestro de menús en solitario.",
-  "updatedAt": "2026-10-23T23:54:50.188Z"
+  "updatedAt": "2026-10-23T23:55:09.479Z"
 }
