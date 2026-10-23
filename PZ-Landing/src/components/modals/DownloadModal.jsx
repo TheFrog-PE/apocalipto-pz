@@ -118,7 +118,7 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-4">
                   <a
-                    href="/downloads/ApocaliptoPZ-Setup.exe"
+                    href="https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe"
                     download="ApocaliptoPZ-Setup.exe"
                     className="flex-1 py-3 bg-zinc-800 hover:bg-emerald-500 text-zinc-200 hover:text-black font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
                   >
@@ -126,7 +126,7 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
                     <span>DESCARGAR .EXE</span>
                   </a>
                   <a
-                    href="/downloads/ApocaliptoPZ-Setup.zip"
+                    href="https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.zip"
                     download="ApocaliptoPZ-Setup.zip"
                     className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
                   >

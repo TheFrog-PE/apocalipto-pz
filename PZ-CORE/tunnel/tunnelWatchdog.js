@@ -113,24 +113,24 @@ startCloudflared();
 
 let consecutiveFailures = 0;
 
-// Guardián de salud cada 20 segundos
+// Guardián de salud cada 30 segundos
 setInterval(async () => {
   if (!currentTunnelUrl) return;
   try {
-    const res = await fetch(`${currentTunnelUrl}/api/health`, { signal: AbortSignal.timeout(6000) });
+    const res = await fetch(`${currentTunnelUrl}/api/health`, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) {
       consecutiveFailures++;
-      log(`⚠️ Fallo en chequeo de salud HTTP ${res.status} (${consecutiveFailures}/2)`);
+      log(`⚠️ Fallo en chequeo de salud HTTP ${res.status} (${consecutiveFailures}/5)`);
     } else {
       consecutiveFailures = 0;
     }
   } catch (e) {
     consecutiveFailures++;
-    log(`⚠️ Advertencia de conectividad en túnel: ${e.message} (${consecutiveFailures}/2)`);
+    log(`⚠️ Advertencia de conectividad en túnel: ${e.message} (${consecutiveFailures}/5)`);
   }
 
-  if (consecutiveFailures >= 2) {
-    log('🚨 Túnel caído o inaccesible tras 2 intentos. Reiniciando cloudflared inmediatamente...');
+  if (consecutiveFailures >= 5) {
+    log('🚨 Túnel caído o inaccesible tras 5 intentos continuos. Reiniciando cloudflared...');
     consecutiveFailures = 0;
     if (cloudflaredProc) {
       try {
@@ -138,4 +138,4 @@ setInterval(async () => {
       } catch {}
     }
   }
-}, 20000);
+}, 30000);

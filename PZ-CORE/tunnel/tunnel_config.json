@@ -9,10 +9,10 @@
     "datacenter": "Santiago, Chile"
   },
   "bridgeTunnel": {
-    "url": "https://jefferson-cpu-sarah-princeton.trycloudflare.com",
+    "url": "https://measurements-bit-taxi-temple.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-23T11:49:12.857Z"
+  "configuredAt": "2026-10-23T12:49:56.288Z"
 }
