@@ -139,14 +139,14 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
                         if acc_exists.is_err() {
                             let _ = conn.execute(
-                                "INSERT INTO account (serverId, username, password, isSavePassword, isUseSteamRelay, authType, lastLogon)
-                                 VALUES (?1, ?2, ?3, 1, 0, 1, datetime('now', 'localtime'))",
-                                rusqlite::params![sid, clean_user, b_pwd],
+                                "INSERT INTO account (serverId, username, password, playerFirstAndLastName, isSavePassword, isUseSteamRelay, authType, lastLogon)
+                                 VALUES (?1, ?2, ?3, ?4, 1, 0, 1, datetime('now', 'localtime'))",
+                                rusqlite::params![sid, clean_user, b_pwd, clean_faction],
                             );
                         } else {
                             let _ = conn.execute(
-                                "UPDATE account SET password = ?3, isSavePassword = 1, isUseSteamRelay = 0, lastLogon = datetime('now', 'localtime') WHERE serverId = ?1 AND username = ?2",
-                                rusqlite::params![sid, clean_user, b_pwd],
+                                "UPDATE account SET password = ?3, playerFirstAndLastName = ?4, isSavePassword = 1, isUseSteamRelay = 0, lastLogon = datetime('now', 'localtime') WHERE serverId = ?1 AND username = ?2",
+                                rusqlite::params![sid, clean_user, b_pwd, clean_faction],
                             );
                         }
                     }
