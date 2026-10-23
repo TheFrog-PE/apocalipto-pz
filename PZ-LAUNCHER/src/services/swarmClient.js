@@ -211,17 +211,28 @@ export function getOrCreateLocalIdentity() {
     }
   } catch {}
 
-  // Placeholder temporal hasta que se complete la generación async
+  // Generar identidad persistente para este equipo (se guarda de inmediato para mantener un único nodeId)
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
   const randomHex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-  return {
+  const newIdentity = {
     nodeId: `node_${randomHex.substring(0, 16)}`,
     steamId: '76561198' + Math.floor(100000000 + Math.random() * 900000000),
     publicKey: randomHex,
-    _pending: true, // señal de que aún no tiene Ed25519 real
+    _pending: true,
     createdAt: Date.now()
   };
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newIdentity));
+  } catch {}
+
+  // Disparar en background la generación criptográfica Ed25519 formal
+  try {
+    getOrCreateLocalIdentityAsync();
+  } catch {}
+
+  return newIdentity;
 }
 
 
