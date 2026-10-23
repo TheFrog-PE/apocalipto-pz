@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, ExternalLink, ShieldCheck, Cpu, Server, CheckCircle2, X, Terminal, Copy, Check, Monitor } from 'lucide-react';
-import { fetchGatewayInfo, fetchLiveSwarmStats, getBridgeApiUrl } from '../../services/swarmTelemetry';
+import { Download, ShieldCheck, Cpu, Server, X, Terminal, Copy, Check } from 'lucide-react';
+import { fetchGatewayInfo, fetchLiveSwarmStats } from '../../services/swarmTelemetry';
 
 export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursorLeave }) {
   const [gatewayData, setGatewayData] = useState(null);
@@ -18,12 +18,6 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
   if (!isOpen) return null;
 
   const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const isLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
-
-  // Si el usuario está en su máquina local, puede abrir directamente localhost:5176
-  const launchUrl = isLocal 
-    ? 'http://localhost:5176' 
-    : (gatewayData?.inviteUrl || `http://${currentHost}:5176/?gateway=http://${currentHost}:19842`);
 
   // Enlace para compartir con jugadores en la red
   const inviteUrl = gatewayData?.inviteUrl || `http://${gatewayData?.localLanIp || currentHost}:5176/?gateway=http://${gatewayData?.localLanIp || currentHost}:19842`;
@@ -34,10 +28,6 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleOpenLauncher = () => {
-    window.open(launchUrl, '_blank');
-  };
-
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 font-mono text-xs text-zinc-200">
@@ -45,7 +35,7 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-[#0b0d13] border border-zinc-700/80 rounded-3xl w-full max-w-2xl overflow-hidden flex flex-col shadow-2xl relative"
+          className="bg-[#0b0d13] border border-zinc-700/80 rounded-3xl w-full max-w-xl overflow-hidden flex flex-col shadow-2xl relative"
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-zinc-800 bg-[#11131a] flex items-center justify-between">
@@ -63,7 +53,7 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
             </button>
           </div>
 
-          <div className="p-6 sm:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+          <div className="p-6 sm:p-8 space-y-6 max-h-[85vh] overflow-y-auto">
             {/* Swarm Status Banner */}
             <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
@@ -80,60 +70,36 @@ export default function DownloadModal({ isOpen, onClose, onCursorEnter, onCursor
               </div>
             </div>
 
-            {/* Opciones de Acceso */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Opción 1: Abrir Launcher (Entorno Runtime de Escritorio) */}
-              <div className="bg-[#12151e] border border-zinc-800 hover:border-[#e6fb04]/70 rounded-2xl p-5 flex flex-col justify-between transition-all group">
-                <div className="space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#e6fb04]/10 text-[#e6fb04] flex items-center justify-center mb-3">
-                    <Monitor className="w-5 h-5" />
-                  </div>
-                  <h4 className="font-bold text-white text-sm font-syne uppercase">1. INICIAR LAUNCHER</h4>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                    Ejecuta la interfaz del Launcher en el entorno local con autoconfiguración del Enjambre P2P.
-                  </p>
-                </div>
-                <button
-                  onClick={handleOpenLauncher}
-                  className="mt-4 w-full py-3 bg-[#e6fb04] hover:bg-white text-black font-extrabold uppercase rounded-xl transition-all shadow-[0_0_20px_rgba(230,251,4,0.3)] flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                >
-                  <ExternalLink className="w-4 h-4 stroke-[2.5]" />
-                  <span>EJECUTAR LAUNCHER</span>
-                </button>
-              </div>
-
-              {/* Opción 2: Descargar Instalador Oficial Windows (.EXE) */}
-              <div className="bg-[#12151e] border border-zinc-800 hover:border-emerald-500/70 rounded-2xl p-5 flex flex-col justify-between transition-all group">
-                <div className="space-y-2">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+            {/* Opción Única Oficial: App de Escritorio (.ZIP) */}
+            <div className="bg-[#12151e] border border-zinc-800 hover:border-emerald-500/70 rounded-2xl p-6 flex flex-col justify-between transition-all group shadow-xl">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                     <Download className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-white text-sm font-syne uppercase">2. APP DE ESCRITORIO</h4>
-                    <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-bold">.EXE NATIVO</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                  <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded font-mono font-bold tracking-wider">
+                    WINDOWS 10 / 11
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-base font-syne uppercase tracking-wide">
+                    APP DE ESCRITORIO // LAUNCHER OFICIAL
+                  </h4>
+                  <p className="text-xs text-zinc-400 font-sans leading-relaxed mt-1.5">
                     Instalador oficial para Windows 10/11. Aplicación nativa de escritorio con motor de Enjambre P2P y aceleración de red.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                  <a
-                    href="https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe"
-                    download="ApocaliptoPZ-Setup.exe"
-                    className="flex-1 py-3 bg-zinc-800 hover:bg-emerald-500 text-zinc-200 hover:text-black font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                  >
-                    <Download className="w-4 h-4 stroke-[2.5]" />
-                    <span>DESCARGAR .EXE</span>
-                  </a>
-                  <a
-                    href="https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.zip"
-                    download="ApocaliptoPZ-Setup.zip"
-                    className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 font-extrabold uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-syne text-[11px]"
-                  >
-                    <Download className="w-4 h-4 stroke-[2.5]" />
-                    <span>DESCARGAR .ZIP</span>
-                  </a>
-                </div>
+              </div>
+
+              <div className="mt-6">
+                <a
+                  href="https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.zip"
+                  download="ApocaliptoPZ-Setup.zip"
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold uppercase rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2.5 cursor-pointer font-syne text-xs tracking-wider"
+                >
+                  <Download className="w-5 h-5 stroke-[2.5]" />
+                  <span>DESCARGAR .ZIP</span>
+                </a>
               </div>
             </div>
 
