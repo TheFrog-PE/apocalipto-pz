@@ -55,8 +55,30 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             let _ = fs::remove_file(zomboid_dir.join("apocalipto_connect.ini"));
             let _ = fs::remove_file(lua_dir.join("apocalipto_connect.ini"));
 
-            let _ = fs::remove_file(zomboid_dir.join("apocalipto_launch_ticket.ini"));
-            let _ = fs::remove_file(lua_dir.join("apocalipto_launch_ticket.ini"));
+            // Escribir ticket efímero de conexión automática directa para el launcher
+            let ticket_path = zomboid_dir.join("apocalipto_launch_ticket.ini");
+            let lua_ticket_path = lua_dir.join("apocalipto_launch_ticket.ini");
+            let ticket_content = format!(
+                "user={}\nfaction={}\nip={}\nport={}\nserverName=Apocalipto PZ\npassword=12345\n",
+                clean_user, clean_faction, clean_ip, clean_port
+            );
+            let _ = fs::write(&ticket_path, &ticket_content);
+            let _ = fs::write(&lua_ticket_path, &ticket_content);
+            let _ = fs::write(lua_dir.join("apocalipto_connect.ini"), &ticket_content);
+            let _ = fs::write(zomboid_dir.join("apocalipto_connect.ini"), &ticket_content);
+
+            // Escribir facción activa para enrutamiento automático de spawn en MapSpawnSelect
+            let _ = fs::write(lua_dir.join("apocalipto_faction.txt"), &clean_faction);
+            let _ = fs::write(zomboid_dir.join("apocalipto_faction.txt"), &clean_faction);
+
+            // Limpiar ticket tras 30s de forma asíncrona para que partidas en solitario posteriores sigan siendo 100% vanilla
+            let t1 = ticket_path.clone();
+            let t2 = lua_ticket_path.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(30));
+                let _ = fs::remove_file(t1);
+                let _ = fs::remove_file(t2);
+            });
 
             // Inyectar en bases de datos SQLite locales de Project Zomboid (Favoritos automáticos)
             let db_dir = zomboid_dir.join("db");
@@ -166,8 +188,168 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 let _ = fs::remove_file(pz_dir.join("apocalipto_launch_ticket.ini"));
 
                 let lua_client = pz_dir.join("media").join("lua").join("client");
-                let _ = fs::remove_file(lua_client.join("ApocaliptoConnectBridge.lua"));
-                let _ = fs::remove_file(lua_client.join("ApocaliptoFactionAutoSync.lua"));
+                let _ = fs::create_dir_all(&lua_client);
+                let bridge_lua_content = r##"-- [APOCALIPTO PZ] Puente de Conexión Automática Seguro para Launcher
+local ticketChecked = false
+local pendingTicket = nil
+local tickAttempts = 0
+
+local function doApocaliptoConnect(ticket)
+    if not ticket or not ticket.user or ticket.user == "" then return false end
+    local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+    local mainScreen = MainScreen and MainScreen.instance
+
+    if connectUI and mainScreen then
+        print("[APOCALIPTO PZ] Auto-conectando directamente como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port or 16261))
+        
+        if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+        _G.ApocaliptoSession.faction = ticket.faction or "MOK"
+        _G.ApocaliptoSession.user = ticket.user
+        _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+        if mainScreen.bottomPanel then
+            mainScreen.bottomPanel:setVisible(false)
+        end
+        if mainScreen.animPopup then
+            mainScreen.animPopup:removeFromUIManager()
+        end
+        if mainScreen.bootstrapConnectPopup then
+            mainScreen.bootstrapConnectPopup:setVisible(false)
+        end
+
+        connectUI:connect(
+            mainScreen.bottomPanel or mainScreen,
+            ticket.serverName or "Apocalipto PZ",
+            ticket.user,
+            ticket.password or "12345",
+            ticket.ip,
+            "",
+            tostring(ticket.port or 16261),
+            "",
+            false,
+            true,
+            1
+        )
+        return true
+    end
+    return false
+end
+
+-- 1. Hook sobre BootstrapConnectPopup: Bypass total de la pantalla de invitaciones de Steam para conexiones directas
+if BootstrapConnectPopup then
+    local orig_connect = BootstrapConnectPopup.connect
+    BootstrapConnectPopup.connect = function(self, host, port, serverPassword)
+        self:setVisible(false)
+        if MainScreen and MainScreen.instance and MainScreen.instance.bottomPanel then
+            MainScreen.instance.bottomPanel:setVisible(false)
+        end
+        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or "Superviviente"
+        local sPwd = "12345"
+
+        local reader = getFileReader("apocalipto_launch_ticket.ini", false)
+        if reader then
+            while true do
+                local line = reader:readLine()
+                if line == nil then break end
+                line = string.trim(line)
+                local sep = string.find(line, "=")
+                if sep then
+                    local k = string.trim(string.sub(line, 1, sep - 1))
+                    local v = string.trim(string.sub(line, sep + 1))
+                    if k == "user" and v ~= "" then uName = v end
+                    if k == "password" and v ~= "" then sPwd = v end
+                end
+            end
+            reader:close()
+        end
+
+        local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+        if connectUI then
+            print("[APOCALIPTO PZ] Bypass de BootstrapConnectPopup: Conectando directo a " .. tostring(host) .. ":" .. tostring(port))
+            connectUI:connect(self, "Apocalipto PZ", uName, sPwd, host, "", tostring(port), "", false, true, 1)
+            return
+        end
+        if orig_connect then orig_connect(self, host, port, serverPassword) end
+    end
+end
+
+-- 2. Hook sobre ServerConnectPopup para auto-completar usuario y contraseña si llega a abrirse
+if ServerConnectPopup then
+    local orig_setServer = ServerConnectPopup.setServer
+    ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
+        if orig_setServer then orig_setServer(self, ip, port, passwordStr) end
+        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user)
+        if uName and uName ~= "" then
+            self.usernameEntry:setText(uName)
+            self.passwordEntry:setText("12345")
+            if self.serverPasswordEntry then self.serverPasswordEntry:setText("") end
+            self:setVisible(false)
+            local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+            if connectUI then
+                connectUI:connect(self, "Apocalipto PZ", uName, "12345", ip, "", tostring(port), "", false, true, 1)
+            end
+        end
+    end
+end
+
+-- 3. Detección automática por Ticket Efímero al entrar al Menú Principal
+local function onTickTryConnect()
+    if not pendingTicket then return end
+    tickAttempts = tickAttempts + 1
+    if doApocaliptoConnect(pendingTicket) or tickAttempts > 60 then
+        pendingTicket = nil
+        if Events.OnTick then Events.OnTick.Remove(onTickTryConnect) end
+    end
+end
+
+local function checkApocaliptoLaunchTicket()
+    if ticketChecked then return end
+    ticketChecked = true
+    if isClient and isClient() then return end
+    if isIngameState and isIngameState() then return end
+
+    local fname = "apocalipto_launch_ticket.ini"
+    local reader = getFileReader(fname, false)
+    if not reader then return end
+
+    local ticket = {}
+    while true do
+        local line = reader:readLine()
+        if line == nil then break end
+        line = string.trim(line)
+        if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+            local sep = string.find(line, "=")
+            if sep then
+                local k = string.trim(string.sub(line, 1, sep - 1))
+                local v = string.trim(string.sub(line, sep + 1))
+                ticket[k] = v
+            end
+        end
+    end
+    reader:close()
+
+    local eraser = getFileWriter(fname, true, false)
+    if eraser then eraser:close() end
+
+    if not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then return end
+
+    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+    _G.ApocaliptoSession.user = ticket.user
+    _G.ApocaliptoSession.faction = ticket.faction or "MOK"
+    _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+    if not doApocaliptoConnect(ticket) then
+        pendingTicket = ticket
+        tickAttempts = 0
+        if Events.OnTick then Events.OnTick.Add(onTickTryConnect) end
+    end
+end
+
+if Events.OnMainMenuEnter then
+    Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
+end
+"##;
+                let _ = fs::write(lua_client.join("ApocaliptoConnectBridge.lua"), bridge_lua_content);
 
                 // Asegurar doVideoEffects=true en options.ini para que se muestre el fondo moderno de B42
                 if let Ok(user_profile) = std::env::var("USERPROFILE") {
@@ -194,6 +376,169 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
         // Fallback 1: Si encontramos steam.exe, lanzar con -applaunch 108600 (evita el modal de opciones de inicio de Steam)
         if let Some(steam_dir) = get_steam_path_from_registry() {
+            let steam_client_lua = PathBuf::from(&steam_dir).join("steamapps").join("common").join("ProjectZomboid").join("media").join("lua").join("client");
+            let _ = fs::create_dir_all(&steam_client_lua);
+            let bridge_lua_content = r##"-- [APOCALIPTO PZ] Puente de Conexión Automática Seguro para Launcher
+local ticketChecked = false
+local pendingTicket = nil
+local tickAttempts = 0
+
+local function doApocaliptoConnect(ticket)
+    if not ticket or not ticket.user or ticket.user == "" then return false end
+    local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+    local mainScreen = MainScreen and MainScreen.instance
+
+    if connectUI and mainScreen then
+        print("[APOCALIPTO PZ] Auto-conectando directamente como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port or 16261))
+        
+        if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+        _G.ApocaliptoSession.faction = ticket.faction or "MOK"
+        _G.ApocaliptoSession.user = ticket.user
+        _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+        if mainScreen.bottomPanel then
+            mainScreen.bottomPanel:setVisible(false)
+        end
+        if mainScreen.animPopup then
+            mainScreen.animPopup:removeFromUIManager()
+        end
+        if mainScreen.bootstrapConnectPopup then
+            mainScreen.bootstrapConnectPopup:setVisible(false)
+        end
+
+        connectUI:connect(
+            mainScreen.bottomPanel or mainScreen,
+            ticket.serverName or "Apocalipto PZ",
+            ticket.user,
+            ticket.password or "12345",
+            ticket.ip,
+            "",
+            tostring(ticket.port or 16261),
+            "",
+            false,
+            true,
+            1
+        )
+        return true
+    end
+    return false
+end
+
+-- 1. Hook sobre BootstrapConnectPopup: Bypass total de la pantalla de invitaciones de Steam para conexiones directas
+if BootstrapConnectPopup then
+    local orig_connect = BootstrapConnectPopup.connect
+    BootstrapConnectPopup.connect = function(self, host, port, serverPassword)
+        self:setVisible(false)
+        if MainScreen and MainScreen.instance and MainScreen.instance.bottomPanel then
+            MainScreen.instance.bottomPanel:setVisible(false)
+        end
+        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or "Superviviente"
+        local sPwd = "12345"
+
+        local reader = getFileReader("apocalipto_launch_ticket.ini", false)
+        if reader then
+            while true do
+                local line = reader:readLine()
+                if line == nil then break end
+                line = string.trim(line)
+                local sep = string.find(line, "=")
+                if sep then
+                    local k = string.trim(string.sub(line, 1, sep - 1))
+                    local v = string.trim(string.sub(line, sep + 1))
+                    if k == "user" and v ~= "" then uName = v end
+                    if k == "password" and v ~= "" then sPwd = v end
+                end
+            end
+            reader:close()
+        end
+
+        local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+        if connectUI then
+            print("[APOCALIPTO PZ] Bypass de BootstrapConnectPopup: Conectando directo a " .. tostring(host) .. ":" .. tostring(port))
+            connectUI:connect(self, "Apocalipto PZ", uName, sPwd, host, "", tostring(port), "", false, true, 1)
+            return
+        end
+        if orig_connect then orig_connect(self, host, port, serverPassword) end
+    end
+end
+
+-- 2. Hook sobre ServerConnectPopup para auto-completar usuario y contraseña si llega a abrirse
+if ServerConnectPopup then
+    local orig_setServer = ServerConnectPopup.setServer
+    ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
+        if orig_setServer then orig_setServer(self, ip, port, passwordStr) end
+        local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user)
+        if uName and uName ~= "" then
+            self.usernameEntry:setText(uName)
+            self.passwordEntry:setText("12345")
+            if self.serverPasswordEntry then self.serverPasswordEntry:setText("") end
+            self:setVisible(false)
+            local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
+            if connectUI then
+                connectUI:connect(self, "Apocalipto PZ", uName, "12345", ip, "", tostring(port), "", false, true, 1)
+            end
+        end
+    end
+end
+
+-- 3. Detección automática por Ticket Efímero al entrar al Menú Principal
+local function onTickTryConnect()
+    if not pendingTicket then return end
+    tickAttempts = tickAttempts + 1
+    if doApocaliptoConnect(pendingTicket) or tickAttempts > 60 then
+        pendingTicket = nil
+        if Events.OnTick then Events.OnTick.Remove(onTickTryConnect) end
+    end
+end
+
+local function checkApocaliptoLaunchTicket()
+    if ticketChecked then return end
+    ticketChecked = true
+    if isClient and isClient() then return end
+    if isIngameState and isIngameState() then return end
+
+    local fname = "apocalipto_launch_ticket.ini"
+    local reader = getFileReader(fname, false)
+    if not reader then return end
+
+    local ticket = {}
+    while true do
+        local line = reader:readLine()
+        if line == nil then break end
+        line = string.trim(line)
+        if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+            local sep = string.find(line, "=")
+            if sep then
+                local k = string.trim(string.sub(line, 1, sep - 1))
+                local v = string.trim(string.sub(line, sep + 1))
+                ticket[k] = v
+            end
+        end
+    end
+    reader:close()
+
+    local eraser = getFileWriter(fname, true, false)
+    if eraser then eraser:close() end
+
+    if not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then return end
+
+    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+    _G.ApocaliptoSession.user = ticket.user
+    _G.ApocaliptoSession.faction = ticket.faction or "MOK"
+    _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+    if not doApocaliptoConnect(ticket) then
+        pendingTicket = ticket
+        tickAttempts = 0
+        if Events.OnTick then Events.OnTick.Add(onTickTryConnect) end
+    end
+end
+
+if Events.OnMainMenuEnter then
+    Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
+end
+"##;
+            let _ = fs::write(steam_client_lua.join("ApocaliptoConnectBridge.lua"), bridge_lua_content);
             let steam_exe = PathBuf::from(steam_dir).join("steam.exe");
             if steam_exe.exists() {
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
@@ -485,6 +830,28 @@ fn delete_saved_character(username: String) -> Result<bool, String> {
                     }
                 }
             }
+
+            // También purgar de la base de datos del servidor local si existe
+            let server_db = db_dir.join("ApocaliptoPZ.db");
+            if server_db.exists() {
+                if let Ok(conn) = rusqlite::Connection::open(&server_db) {
+                    let _ = conn.execute(
+                        "DELETE FROM whitelist WHERE username = ?1",
+                        rusqlite::params![clean_user],
+                    );
+                }
+            }
+
+            // Y purgar del save de jugadores si existe
+            let players_db = PathBuf::from(&user_profile).join("Zomboid").join("Saves").join("Multiplayer").join("ApocaliptoPZ").join("players.db");
+            if players_db.exists() {
+                if let Ok(conn) = rusqlite::Connection::open(&players_db) {
+                    let _ = conn.execute(
+                        "DELETE FROM networkPlayers WHERE username = ?1",
+                        rusqlite::params![clean_user],
+                    );
+                }
+            }
         }
         Ok(true)
     }
@@ -577,9 +944,28 @@ fn get_steam_user_identity() -> Result<SteamUserIdentity, String> {
     }
 }
 
+
+#[tauri::command]
+fn is_game_running() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let output = std::process::Command::new("tasklist")
+            .args(["/FI", "IMAGENAME eq ProjectZomboid64.exe", "/NH"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+        if let Ok(out) = output {
+            let text = String::from_utf8_lossy(&out.stdout);
+            return text.contains("ProjectZomboid64.exe");
+        }
+    }
+    false
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity])
+        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity, is_game_running])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

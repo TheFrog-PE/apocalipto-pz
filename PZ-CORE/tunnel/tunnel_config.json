@@ -9,10 +9,10 @@
     "datacenter": "Santiago, Chile"
   },
   "bridgeTunnel": {
-    "url": "https://nextel-tray-raised-shed.trycloudflare.com",
+    "url": "https://goto-antique-adjusted-falling.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-23T18:10:12.495Z"
+  "configuredAt": "2026-10-24T21:54:35.928Z"
 }

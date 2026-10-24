@@ -10,7 +10,7 @@
 // Configuración de Descubrimiento Descentralizado (Bootstrap Registry)
 const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 const ALT_BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
-export const FALLBACK_PUBLIC_GATEWAY = 'https://johnson-dried-equipment-respect.trycloudflare.com';
+export const FALLBACK_PUBLIC_GATEWAY = 'https://goto-antique-adjusted-falling.trycloudflare.com';
 
 let cachedRemoteGateway = FALLBACK_PUBLIC_GATEWAY;
 let isLocalHostActive = false;
@@ -852,6 +852,12 @@ export async function fetchSavedCharacters() {
 
   const enriched = characters.map(ch => {
     let fid = factionMap[ch.username];
+    if (!fid && ch.player_name) {
+      const p = ch.player_name.trim().toLowerCase();
+      if (['doe', 'mok', 'kto', 'riv'].includes(p)) {
+        fid = p;
+      }
+    }
     if (!fid) {
       const u = ch.username.toLowerCase();
       if (u.includes('kto') || u.endsWith('_kto')) fid = 'kto';
@@ -868,6 +874,18 @@ export async function fetchSavedCharacters() {
   });
 
   return enriched;
+}
+
+/**
+ * Consulta de forma nativa a Windows si el ejecutable del juego esta corriendo actualmente.
+ */
+export async function checkIsGameRunning() {
+  try {
+    const { invoke } = await import('@tauri-apps/api/tauri');
+    return await invoke('is_game_running');
+  } catch (err) {
+    return false;
+  }
 }
 
 /**

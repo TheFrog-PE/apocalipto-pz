@@ -6,10 +6,10 @@
     "protocol": "UDP"
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.0",
-  "minRequiredVersion": "1.2.0",
+  "latestVersion": "1.2.1",
+  "minRequiredVersion": "1.2.1",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "023d8571a79dad732f76efefe5cb38b09a8a20c6e6bcbd910a2f6ecedf37a13c",
-  "changelog": "Versión 1.2.0: Rediseño táctico con panel vertical de 4 slots a la derecha, creación independiente por slot en facciones distintas, eliminación sincronizada con Zomboid y cero secuestro de menús en solitario.",
-  "updatedAt": "2026-10-24T21:54:35.634Z"
+  "sha256": "cbd7956949ea89cd6582726296a247504384ff9281c1dc1295ef762f171bc4a3",
+  "changelog": "Versión 1.2.1: Enlace directo al servidor garantizado con bypass total de pantallas de Steam para jugadores internacionales, inyección automática de facción y cero timeout.",
+  "updatedAt": "2026-10-24T23:36:00.000Z"
 }

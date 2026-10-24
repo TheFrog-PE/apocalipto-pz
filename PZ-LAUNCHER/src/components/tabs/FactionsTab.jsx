@@ -24,7 +24,8 @@ export default function FactionsTab({
   onDeleteCharacter,
   onStartNewCharacter,
   isCreatingCharacter = false,
-  onCancelNewCharacter
+  onCancelNewCharacter,
+  isGameRunning = false
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -250,6 +251,17 @@ export default function FactionsTab({
                 <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>ACTUALIZAR LAUNCHER // v{updateInfo.latestVersion || 'NUEVA'}</span>
               </button>
+            ) : isGameRunning ? (
+              <div className="flex items-center gap-3">
+                <button
+                  disabled
+                  className="flex items-center justify-center gap-2.5 px-8 py-3.5 font-black text-sm tracking-widest uppercase rounded-xl bg-zinc-950 border border-amber-500/70 text-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.25)] cursor-not-allowed select-none"
+                  title="Project Zomboid está en ejecución. Cierra el juego para volver a interactuar."
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                  <span>🎮 EN JUEGO... // NO CERRAR EL LAUNCHER</span>
+                </button>
+              </div>
             ) : isCreatingCharacter ? (
               <div className="flex items-center gap-3">
                 <button
@@ -449,11 +461,14 @@ export default function FactionsTab({
                       <div className="flex items-center gap-1.5 mt-auto pt-1.5 border-t border-zinc-800/80">
                         <button
                           type="button"
-                          onClick={() => onSelectCharacter && onSelectCharacter(char)}
-                          className={`flex-1 py-1 px-2 rounded-lg font-mono text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                            isCurrentActive
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 hover:border-zinc-500 active:scale-95'
+                          disabled={isGameRunning}
+                          onClick={() => !isGameRunning && onSelectCharacter && onSelectCharacter(char)}
+                          className={`flex-1 py-1 px-2 rounded-lg font-mono text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1 ${
+                            isGameRunning
+                              ? 'bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed select-none'
+                              : isCurrentActive
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer'
+                                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 hover:border-zinc-500 active:scale-95 cursor-pointer'
                           }`}
                         >
                           {isCurrentActive ? (
@@ -468,9 +483,14 @@ export default function FactionsTab({
 
                         <button
                           type="button"
-                          onClick={() => setDeleteTarget(char.username)}
-                          className="p-1.5 rounded-lg bg-zinc-900 hover:bg-red-950/80 border border-zinc-800 hover:border-red-600/60 text-zinc-400 hover:text-red-400 transition-all cursor-pointer"
-                          title="Eliminar este superviviente del juego y liberar este slot"
+                          disabled={isGameRunning}
+                          onClick={() => !isGameRunning && setDeleteTarget(char.username)}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            isGameRunning
+                              ? 'bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed'
+                              : 'bg-zinc-900 hover:bg-red-950/80 border-zinc-800 hover:border-red-600/60 text-zinc-400 hover:text-red-400 cursor-pointer'
+                          }`}
+                          title={isGameRunning ? "No puedes eliminar mientras el juego esté en ejecución" : "Eliminar este superviviente del juego y liberar este slot"}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -488,16 +508,19 @@ export default function FactionsTab({
                 <div
                   key={slotIdx}
                   onClick={() => {
+                    if (isGameRunning) return;
                     if (isNextAvailableSlot && onStartNewCharacter) {
                       onStartNewCharacter();
                     }
                   }}
                   className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 min-h-[72px] ${
-                    isThisSlotBeingCreated
-                      ? 'border-emerald-500 bg-emerald-950/30 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/40 cursor-default'
-                      : isNextAvailableSlot
-                        ? 'border-dashed border-amber-500/60 bg-amber-950/15 hover:bg-amber-950/30 hover:border-amber-400 text-amber-300 cursor-pointer group shadow-sm hover:scale-[1.02]'
-                        : 'border-dashed border-zinc-800/60 bg-zinc-950/30 text-zinc-600 cursor-not-allowed select-none'
+                    isGameRunning
+                      ? 'border-dashed border-zinc-800/60 bg-zinc-950/20 text-zinc-600 cursor-not-allowed select-none'
+                      : isThisSlotBeingCreated
+                        ? 'border-emerald-500 bg-emerald-950/30 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/40 cursor-default'
+                        : isNextAvailableSlot
+                          ? 'border-dashed border-amber-500/60 bg-amber-950/15 hover:bg-amber-950/30 hover:border-amber-400 text-amber-300 cursor-pointer group shadow-sm hover:scale-[1.02]'
+                          : 'border-dashed border-zinc-800/60 bg-zinc-950/30 text-zinc-600 cursor-not-allowed select-none'
                   }`}
                 >
                   {isThisSlotBeingCreated ? (

@@ -18,7 +18,7 @@ import factionsBg from './assets/apocalipto-pz-facciones.webp';
 import newsBg from './assets/publicaciones-bg-pz.webp';
 import contactBg from './assets/contacto-bg-pz.webp';
 
-import { getSavedPermanentTicket, savePermanentTicket, getSwarmBridgeUrl, getOrCreateLocalIdentity, launchProjectZomboid, activateAlfaEngine, getAlfaStatus, resetSwarmCharacter, setSwarmNodeFaction, fetchSavedCharacters, removeSavedCharacter, recordCharacterFaction } from './services/swarmClient';
+import { getSavedPermanentTicket, savePermanentTicket, getSwarmBridgeUrl, getOrCreateLocalIdentity, launchProjectZomboid, activateAlfaEngine, getAlfaStatus, resetSwarmCharacter, setSwarmNodeFaction, fetchSavedCharacters, removeSavedCharacter, recordCharacterFaction, checkIsGameRunning } from './services/swarmClient';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('facciones');
@@ -104,6 +104,29 @@ export default function App() {
 
   // Supervivientes guardados en SQLite de Project Zomboid (ServerListSteam.db / ServerList.db)
   const [savedCharacters, setSavedCharacters] = useState([]);
+  const [isGameRunning, setIsGameRunning] = useState(false);
+
+  // Monitor continuo del estado de ejecución de Project Zomboid
+  useEffect(() => {
+    let mounted = true;
+    const checkStatus = async () => {
+      const running = await checkIsGameRunning();
+      if (!mounted) return;
+      setIsGameRunning(prev => {
+        if (prev && !running) {
+          // El juego acaba de cerrarse: recargar slots
+          loadCharacters();
+        }
+        return running;
+      });
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 2000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const loadCharacters = async () => {
     try {
@@ -473,6 +496,7 @@ export default function App() {
     setIsCreatingCharacter(false);
     await loadCharacters();
     if (res.success) {
+      setIsGameRunning(true);
       // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
       // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
       const currentBridge = getSwarmBridgeUrl();
@@ -585,6 +609,7 @@ export default function App() {
               onStartNewCharacter={handleStartNewCharacter}
               isCreatingCharacter={isCreatingCharacter}
               onCancelNewCharacter={handleCancelNewCharacter}
+              isGameRunning={isGameRunning}
             />
           )}
           {activeTab === 'publicaciones' && (
