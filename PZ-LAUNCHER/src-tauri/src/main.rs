@@ -349,7 +349,17 @@ if Events.OnMainMenuEnter then
     Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
 end
 "##;
-                let _ = fs::write(lua_client.join("ApocaliptoConnectBridge.lua"), bridge_lua_content);
+                let bridge_path = lua_client.join("ApocaliptoConnectBridge.lua");
+                let _ = fs::write(&bridge_path, bridge_lua_content);
+                let _ = fs::remove_file(lua_client.join("ApocaliptoFactionAutoSync.lua"));
+
+                // Auto-limpieza tras 15 segundos para garantizar que el cliente quede 100% vanilla
+                // y nunca sea expulsado por DoLuaChecksum en otros servidores multijugador
+                let bp_cleanup = bridge_path.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(15));
+                    let _ = fs::remove_file(bp_cleanup);
+                });
 
                 // Asegurar doVideoEffects=true en options.ini para que se muestre el fondo moderno de B42
                 if let Ok(user_profile) = std::env::var("USERPROFILE") {
@@ -538,7 +548,16 @@ if Events.OnMainMenuEnter then
     Events.OnMainMenuEnter.Add(checkApocaliptoLaunchTicket)
 end
 "##;
-            let _ = fs::write(steam_client_lua.join("ApocaliptoConnectBridge.lua"), bridge_lua_content);
+            let bridge_path = steam_client_lua.join("ApocaliptoConnectBridge.lua");
+            let _ = fs::write(&bridge_path, bridge_lua_content);
+            let _ = fs::remove_file(steam_client_lua.join("ApocaliptoFactionAutoSync.lua"));
+
+            // Auto-limpieza tras 15 segundos para mantener el cliente vanilla
+            let bp_cleanup = bridge_path.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(15));
+                let _ = fs::remove_file(bp_cleanup);
+            });
             let steam_exe = PathBuf::from(steam_dir).join("steam.exe");
             if steam_exe.exists() {
                 let connect_arg = format!("{}:{}", clean_ip, clean_port);
@@ -963,7 +982,37 @@ fn is_game_running() -> bool {
     false
 }
 
+fn clean_residual_injected_files() {
+    #[cfg(target_os = "windows")]
+    {
+        let mut check_dirs = Vec::new();
+        if let Some(pz_exe) = find_pz_executable() {
+            if let Some(parent) = pz_exe.parent() {
+                check_dirs.push(parent.join("media").join("lua").join("client"));
+            }
+        }
+        if let Some(steam_path) = get_steam_path_from_registry() {
+            check_dirs.push(PathBuf::from(steam_path).join("steamapps").join("common").join("ProjectZomboid").join("media").join("lua").join("client"));
+        }
+        for drive in &["C", "D", "E", "F"] {
+            check_dirs.push(PathBuf::from(format!(r"{}:\Program Files (x86)\Steam\steamapps\common\ProjectZomboid\media\lua\client", drive)));
+            check_dirs.push(PathBuf::from(format!(r"{}:\SteamLibrary\steamapps\common\ProjectZomboid\media\lua\client", drive)));
+        }
+
+        let bad_files = ["ApocaliptoConnectBridge.lua", "ApocaliptoFactionAutoSync.lua"];
+        for dir in check_dirs {
+            for f in &bad_files {
+                let target = dir.join(f);
+                if target.exists() {
+                    let _ = fs::remove_file(target);
+                }
+            }
+        }
+    }
+}
+
 fn main() {
+    clean_residual_injected_files();
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity, is_game_running])
         .run(tauri::generate_context!())
