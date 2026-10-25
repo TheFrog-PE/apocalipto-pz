@@ -1909,24 +1909,27 @@ export class SwarmBridgeServer {
   _syncUserToPzWhitelist(username, password = '12345', steamId = null) {
     if (!username) return;
     try {
-      const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
       const cleanUser = username.replace(/['"\\]/g, '');
-      const standardHash = '$2a$12$O/BFHoDFPrfFaNPAACmWpuDEg/if.yPvM8N9H/d4teUaiE1tyDEGu';
-      const cleanPwd = standardHash;
+      const cleanPwd = password ? password.replace(/['"\\]/g, '') : '12345';
       const cleanSteam = (steamId || '').replace(/['"\\]/g, '');
       
-      if (fs.existsSync(serverDbPath)) {
-        const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('SELECT id FROM whitelist WHERE username = ?', ('${cleanUser}',)); r = cur.fetchone(); (cur.execute('UPDATE whitelist SET password = ?, role = 2, authType = 1, steamid = ? WHERE id = ?', ('${cleanPwd}', '${cleanSteam}', r[0])) if r else cur.execute('INSERT INTO whitelist (world, username, password, role, authType, steamid, displayName) VALUES (\\'ApocaliptoPZ\\', ?, ?, 2, 1, ?, ?)', ('${cleanUser}', '${cleanPwd}', '${cleanSteam}', '${cleanUser}'))); conn.commit(); conn.close()"`;
-        exec(pyCmd, () => {});
+      const serverDbPath = path.join(os.homedir(), 'Zomboid', 'db', 'ApocaliptoPZ.db');
+      if (fs.existsSync(serverDbPath) && cleanSteam) {
+        try {
+          const pyCmd = `python -c "import sqlite3; conn = sqlite3.connect(r'${serverDbPath}'); cur = conn.cursor(); cur.execute('UPDATE whitelist SET steamid = ? WHERE username = ?', ('${cleanSteam}', '${cleanUser}')); conn.commit(); conn.close()"`;
+          exec(pyCmd, () => {});
+        } catch {}
       }
+
+      // Usar RCON nativo de Zomboid para que el servidor Java use su propio algoritmo nativo de hashing
       if (this.rcon && typeof this.rcon.execute === 'function') {
-        this.rcon.execute(`adduser "${cleanUser}" "12345"`).then((res) => {
+        this.rcon.execute(`adduser "${cleanUser}" "${cleanPwd}"`).then((res) => {
           if (res && res.response && res.response.includes('already exists')) {
-            return this.rcon.execute(`setpassword "${cleanUser}" "12345"`);
+            return this.rcon.execute(`setpassword "${cleanUser}" "${cleanPwd}"`);
           }
         }).catch(() => {});
       }
-      console.log(`[WHITELIST_SYNC] Usuario ${username} sincronizado en whitelist de SQLite y RCON con password estándar.`);
+      console.log(`[WHITELIST_SYNC] Usuario ${username} gestionado via RCON nativo de PZ.`);
     } catch (e) {
       console.warn('[WHITELIST_SYNC] Warning sincronizando whitelist de PZ:', e.message);
     }
