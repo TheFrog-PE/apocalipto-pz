@@ -45,6 +45,21 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
               setStep(3);
               const fid = (e.data.factionId || '').toLowerCase();
               if (onApproved && fid) onApproved(fid);
+
+              // Auto-lanzar tras aprobación recibida vía BroadcastChannel
+              setTimeout(async () => {
+                setIsLaunching(true);
+                setLaunchMessage('✓ Aprobación confirmada. Iniciando Project Zomboid...');
+                const activeFaction = factionRef.current || selectedFactionData;
+                const finalPlayerName = (survivorName && survivorName.trim().length > 0)
+                  ? survivorName.trim()
+                  : (activeFaction?.tag ? `Superviviente_${activeFaction.tag}` : 'Superviviente');
+                await launchProjectZomboid(localId.nodeId, activeFaction?.tag, finalPlayerName, perfMode);
+                setTimeout(() => {
+                  setIsLaunching(false);
+                  if (onClose) onClose();
+                }, 3000);
+              }, 1200);
             }
           }
           if (e.data?.type === 'NODE_REJECTED') {
@@ -119,10 +134,28 @@ export default function LaunchModal({ isOpen, onClose, selectedFactionData, onAp
             const updated = await pollApprovalStatus(checkId);
             if ((updated.status === 'APPROVED' || updated.status === 'REJECTED') && isMounted) {
               setAccessState(updated);
-              if (updated.status === 'APPROVED' && onApproved) {
-                onApproved(factionId);
-              }
               clearInterval(pollInterval);
+
+              if (updated.status === 'APPROVED') {
+                if (onApproved) onApproved(factionId);
+                // Auto-ejecución instantánea tras recibir visto bueno del Creador en Bento OS
+                setTimeout(async () => {
+                  if (!isMounted) return;
+                  setIsLaunching(true);
+                  setLaunchMessage('✓ Aprobado por el Creador. Conectando al servidor...');
+                  const activeFaction = factionRef.current || selectedFactionData;
+                  const finalPlayerName = (survivorName && survivorName.trim().length > 0)
+                    ? survivorName.trim()
+                    : (activeFaction?.tag ? `Superviviente_${activeFaction.tag}` : 'Superviviente');
+                  await launchProjectZomboid(checkId, activeFaction?.tag, finalPlayerName, perfMode);
+                  setTimeout(() => {
+                    if (isMounted) {
+                      setIsLaunching(false);
+                      onClose();
+                    }
+                  }, 3000);
+                }, 1200);
+              }
             }
           }, 2000);
         }

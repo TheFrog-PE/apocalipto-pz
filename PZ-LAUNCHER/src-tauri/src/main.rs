@@ -343,7 +343,12 @@ local function readTicket()
     pcall(function()
         local fname = "apocalipto_launch_ticket.ini"
         local reader = getFileReader(fname, false)
-        if not reader then return end
+        if not reader then
+            reader = getFileReader("Lua/apocalipto_launch_ticket.ini", false)
+        end
+        if not reader then
+            return
+        end
         ticket = {}
         while true do
             local line = reader:readLine()
@@ -359,6 +364,9 @@ local function readTicket()
             end
         end
         reader:close()
+        if ticket and ticket.user and ticket.ip then
+            safeLog("Ticket detectado: usuario=" .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
+        end
     end)
     ticketLoaded = ticket
     return ticket
@@ -380,8 +388,12 @@ local function tryConnect()
         local mainScreen = MainScreen and MainScreen.instance
         local connectUI = (ConnectToServer and ConnectToServer.instance) or (mainScreen and mainScreen.connectToServer)
 
-        if not mainScreen or not connectUI or not connectUI.title or not connectUI.connectLabel then
+        if not mainScreen or not connectUI then
             return false
+        end
+
+        if (not connectUI.title or not connectUI.connectLabel) and connectUI.create then
+            pcall(function() connectUI:create() end)
         end
 
         local targetPort = tostring(ticket.port or 63854)
@@ -416,10 +428,7 @@ local function tryConnect()
 
     if ok and success then
         bridgeRan = true
-        pcall(function()
-            local eraser = getFileWriter("apocalipto_launch_ticket.ini", true, false)
-            if eraser then eraser:close() end
-        end)
+        safeLog("Orden ConnectToServer:connect() despachada exitosamente al motor de red.")
         return true
     end
     return false
@@ -430,9 +439,15 @@ local function onBridgeTick()
     pcall(function()
         hookMapSpawnSelect()
         tickWait = tickWait + 1
-        -- Esperar 30 ticks (~0.5s) para asegurar que todo el árbol visual exista en RAM
+        -- Esperar 30 ticks (~0.5s) para asegurar que el arbol visual exista en RAM
         if tickWait >= 30 then
-            if tryConnect() or tickWait > 180 then
+            if tryConnect() then
+                safeLog("Conexion iniciada. Removiendo tick listener.")
+                if Events.OnTick then
+                    Events.OnTick.Remove(onBridgeTick)
+                end
+            elseif tickWait > 3600 then
+                safeLog("Timeout de espera de conexion (60s sin ticket).")
                 if Events.OnTick then
                     Events.OnTick.Remove(onBridgeTick)
                 end
