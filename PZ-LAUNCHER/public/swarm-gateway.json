@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://limitation-begins-kai-inc.trycloudflare.com",
+  "gatewayUrl": "https://aka-association-ceo-complement.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63855,
@@ -12,6 +12,6 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "17aa8e1ad22d3af021f597735c15d8b602498307e5e26202dd557d20a9b3db51",
   "changelog": "Versión 1.2.3: Arquitectura Vanilla Sandbox completa. Auto-curación de MapSpawnSelect y ServerConnectPopup sin tocar archivos de Steam en disco. Cero DoLuaChecksum kicks en otros servidores.",
-  "updatedAt": "2026-10-25T15:36:01.151Z",
+  "updatedAt": "2026-10-25T15:38:30.740Z",
   "installerSha256": "17aa8e1ad22d3af021f597735c15d8b602498307e5e26202dd557d20a9b3db51"
 }
