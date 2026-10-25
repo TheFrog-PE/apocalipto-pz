@@ -1,11 +1,10 @@
 import path from 'node:path';
 import { loadOrInitIdentity } from '../crypto/keys.js';
 import { SwarmBridgeServer } from '../network/swarmBridge.js';
-import { PlayitGameRelay } from '../network/playitGameRelay.js';
 
 /**
  * Inicia el Servidor de Señalización del Enjambre (Swarm Bridge Daemon)
- * y el Relay de Juego UDP (Playit 16261 <-> PZ RakNet 16262).
+ * El tráfico de juego de Playit.gg viaja directamente a Project Zomboid (16261).
  */
 async function main() {
   const storageDir = path.join(process.cwd(), '.apocalipto_chain');
@@ -19,15 +18,7 @@ async function main() {
   console.log('================================================================');
   console.log(`• Creador Root NodeID: ${creatorAdmin.nodeId}`);
   console.log(`• Almacenamiento:      ${bridgeDir}`);
-
-  // Iniciar Relay de Juego UDP para redirigir tráfico de Playit al motor RakNet de PZ
-  const gameRelay = new PlayitGameRelay({
-    listenPort: 16261,
-    listenHost: '127.0.0.1',
-    targetPort: 16262,
-    targetHost: '127.0.0.1'
-  });
-  await gameRelay.start();
+  console.log('• Tráfico de Juego:    DIRECTO A PROJECT ZOBOID NATIVO (16261)');
 
   const bridge = new SwarmBridgeServer({
     port: 19842,
@@ -43,7 +34,6 @@ async function main() {
   // Mantener proceso vivo
   process.on('SIGINT', () => {
     console.log('\n[Bridge] Deteniendo servidor de señalización...');
-    gameRelay.stop();
     bridge.stop();
     process.exit(0);
   });

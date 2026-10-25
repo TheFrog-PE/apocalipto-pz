@@ -11,10 +11,10 @@
     "raknetPort": 63855
   },
   "bridgeTunnel": {
-    "url": "https://goto-antique-adjusted-falling.trycloudflare.com",
+    "url": "https://told-spice-journals-awesome.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-25T02:24:58.289Z"
+  "configuredAt": "2026-10-25T15:20:54.749Z"
 }
