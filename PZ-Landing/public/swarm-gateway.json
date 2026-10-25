@@ -8,12 +8,12 @@
     "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.5",
-  "minRequiredVersion": "1.2.5",
+  "latestVersion": "1.2.6",
+  "minRequiredVersion": "1.2.6",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "f2e639f6bfef2bbb29f4605c670288392cb861c88acb32aab098436696e0f6e1",
-  "changelog": "Versión 1.2.5: Corrección de handshake A2S (puerto 63854) y alineación de Lua Bridge en Servidor Dedicado para acceso remoto sin desconexiones.",
-  "updatedAt": "2026-10-25T17:28:00.000Z",
-  "installerSha256": "f2e639f6bfef2bbb29f4605c670288392cb861c88acb32aab098436696e0f6e1"
+  "sha256": "2115747173037b9b0e9096c504fde6c029c9cc12b3e8ffa9747e37938c55f121",
+  "changelog": "Versión 1.2.6: Eliminación total de +connect para bypass absoluto de BootstrapConnectPopup y errores A2S. Conexión directa ultra-estable por ticket en memoria.",
+  "updatedAt": "2026-10-25T18:28:00.000Z",
+  "installerSha256": "2115747173037b9b0e9096c504fde6c029c9cc12b3e8ffa9747e37938c55f121"
 }

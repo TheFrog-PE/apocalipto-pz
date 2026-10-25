@@ -699,10 +699,12 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 let bridge_path = lua_client.join("ApocaliptoConnectBridge.lua");
                 let _ = fs::write(&bridge_path, build_bridge_lua_code());
 
-                let connect_arg = format!("{}:{}", clean_ip, clean_port);
+                // NO pasar +connect: PZ lanza BootstrapConnectPopup que hace steamRequestServerDetails()
+                // (consulta A2S). Si falla → "El servidor no ha respondido". En su lugar, nuestro
+                // bridge lee el ticket efímero en OnMainMenuEnter y conecta directamente vía
+                // ConnectToServer:connect(), bypaseando A2S por completo.
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
-                    .args(["+connect", &connect_arg])
                     .spawn();
 
                 if let Ok(mut child) = spawn_res {
@@ -738,9 +740,9 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
             let steam_exe = PathBuf::from(&steam_dir).join("steam.exe");
             if steam_exe.exists() {
-                let connect_arg = format!("{}:{}", clean_ip, clean_port);
+                // Lanzar PZ sin +connect (ver comentario arriba sobre A2S)
                 let res = std::process::Command::new(&steam_exe)
-                    .args(["-applaunch", "108600", "+connect", &connect_arg])
+                    .args(["-applaunch", "108600"])
                     .creation_flags(CREATE_NO_WINDOW)
                     .spawn();
 
@@ -764,8 +766,8 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             }
         }
 
-        // Fallback 2: Protocolo Steam URI
-        let steam_app_uri = format!("steam://run/108600//+connect%20{}:{}", clean_ip, clean_port);
+        // Fallback 2: Protocolo Steam URI (sin +connect, el bridge maneja la conexión)
+        let steam_app_uri = "steam://rungameid/108600".to_string();
         std::process::Command::new("rundll32.exe")
             .args(["url.dll,FileProtocolHandler", &steam_app_uri])
             .creation_flags(CREATE_NO_WINDOW)
