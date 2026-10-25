@@ -578,9 +578,9 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
     // Si la conexión es remota (no local) y este nodo no es el Alfa, usar el túnel de juego.
     // Si estamos en la máquina local (localhost / 127.0.0.1), conectar directo a loopback.
     if (!isLocal) {
-      // Fallback por defecto al túnel oficial de Playit para jugadores de Internet
+      // Fallback por defecto al túnel oficial de Playit para jugadores de Internet (Puerto Query A2S: 63854)
       targetHost = 'rails-switching.tun.ply.gg';
-      targetPort = 63855;
+      targetPort = 63854;
 
       try {
         const endpointsRes = await fetch(`${bridgeUrl}/api/swarm/network-endpoints`, {
@@ -590,7 +590,7 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
           const epData = await endpointsRes.json();
           if (epData.gameTunnel?.host && epData.alfaNodeId !== nodeId) {
             targetHost = epData.gameTunnel.host;
-            targetPort = Number(epData.gameTunnel.port) || 63855;
+            targetPort = Number(epData.gameTunnel.queryPort || epData.gameTunnel.port) || 63854;
           }
         }
       } catch {}
@@ -676,7 +676,7 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
       message: `Enlace P2P establecido como ${playerName}. Iniciando Project Zomboid...`
     };
   } catch (err) {
-    const fallbackTarget = '147.185.221.215:63855';
+    const fallbackTarget = '147.185.221.215:63854';
     try {
       const { invoke } = await import('@tauri-apps/api/tauri');
       await invoke('launch_steam_game', {
@@ -695,7 +695,7 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
       game: 'Project Zomboid (Build 42)',
       username: username || 'Superviviente',
       serverHost: 'rails-switching.tun.ply.gg',
-      serverPort: 63855,
+      serverPort: 63854,
       isRemote: true,
       message: 'Project Zomboid iniciado vía Steam hacia Apocalipto PZ.'
     };

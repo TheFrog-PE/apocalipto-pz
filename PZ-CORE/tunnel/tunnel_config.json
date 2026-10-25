@@ -2,7 +2,7 @@
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "ip": "147.185.221.215",
-    "port": 63855,
+    "port": 63854,
     "localPort": 16261,
     "protocol": "UDP",
     "provider": "Playit.gg",

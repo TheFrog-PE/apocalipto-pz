@@ -2,17 +2,18 @@
   "gatewayUrl": "https://compressed-upcoming-parker-bronze.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
-    "port": 63855,
+    "port": 63854,
     "protocol": "UDP",
-    "queryPort": 63854
+    "queryPort": 63854,
+    "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.4",
-  "minRequiredVersion": "1.2.4",
+  "latestVersion": "1.2.5",
+  "minRequiredVersion": "1.2.5",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "8568d4ecd2bf7f84db53f67e16d7d6a3fbf0630722bcf0c79530cebdd4f2b6af",
-  "changelog": "Versión 1.2.4: Sincronización remota de Wipe de Mundo (worldEpoch). Auto-limpieza de slots antiguos y bienvenida automática al Día 1.",
-  "updatedAt": "2026-10-25T16:41:00.000Z",
-  "installerSha256": "8568d4ecd2bf7f84db53f67e16d7d6a3fbf0630722bcf0c79530cebdd4f2b6af"
+  "sha256": "f2e639f6bfef2bbb29f4605c670288392cb861c88acb32aab098436696e0f6e1",
+  "changelog": "Versión 1.2.5: Corrección de handshake A2S (puerto 63854) y alineación de Lua Bridge en Servidor Dedicado para acceso remoto sin desconexiones.",
+  "updatedAt": "2026-10-25T17:28:00.000Z",
+  "installerSha256": "f2e639f6bfef2bbb29f4605c670288392cb861c88acb32aab098436696e0f6e1"
 }
