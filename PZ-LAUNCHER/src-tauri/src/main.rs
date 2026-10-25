@@ -448,14 +448,12 @@ pcall(function()
         Events.OnMainMenuEnter.Add(function()
             pcall(function()
                 hookMapSpawnSelect()
+                tickWait = 0
                 if not bridgeRan and Events.OnTick then
                     Events.OnTick.Add(onBridgeTick)
                 end
             end)
         end)
-    end
-    if Events.OnTick then
-        Events.OnTick.Add(onBridgeTick)
     end
 end)
 "##

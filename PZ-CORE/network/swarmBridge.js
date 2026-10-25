@@ -582,29 +582,6 @@ export class SwarmBridgeServer {
           const assignedFactionId = factionId || (faction ? faction.toLowerCase() : 'doe');
           const finalRole = roleClaimed || 'TESTIGO';
 
-          // Generar ticket de admisión firmado inmediatamente para acceso sin fricción
-          const ticketPayload = {
-            nodeId,
-            steamId,
-            friendCode: friendCode || null,
-            accountName: accountName || null,
-            faction: assignedFaction,
-            factionId: assignedFactionId,
-            assignedRole: finalRole,
-            approvedAt: Date.now(),
-            networkId: 'apocalipto_swarm_b42'
-          };
-
-          const signature = signPayload(JSON.stringify(ticketPayload), this.adminIdentity.privateKey);
-          const admissionTicket = {
-            payload: ticketPayload,
-            creatorSignature: signature,
-            creatorPublicKey: this.adminIdentity.publicKey
-          };
-
-          approvedNodes[nodeId] = admissionTicket;
-          this._atomicWrite(this.approvedNodesFile, approvedNodes);
-
           const applicantRecord = {
             nodeId,
             steamId,
@@ -621,7 +598,7 @@ export class SwarmBridgeServer {
             },
             publicKey: signedHardwareProof.publicKey || `ed25519_pk_${nodeId}`,
             signature: signedHardwareProof.signature || `sig_ed25519_${nodeId}`,
-            status: 'APPROVED',
+            status: 'PENDING',
             submittedAt: Date.now()
           };
 
@@ -632,26 +609,21 @@ export class SwarmBridgeServer {
           }
           this._atomicWrite(this.applicantsFile, applicants);
 
-          // Si el nodo tenía un rechazo o expulsión previa, limpiarlo para que la nueva solicitud sea válida
+          // Si el nodo tenía un rechazo previo, limpiarlo para que la nueva solicitud pueda ser evaluada
           const rejectedNodes = this._readJson(this.rejectedNodesFile, {});
           if (rejectedNodes[nodeId]) {
             delete rejectedNodes[nodeId];
             this._atomicWrite(this.rejectedNodesFile, rejectedNodes);
           }
 
-          // Sincronizar automáticamente en la Whitelist de Project Zomboid (SQLite + RCON)
-          const targetPlayerName = accountName || `Superviviente_${assignedFaction}`;
-          this._syncUserToPzWhitelist(targetPlayerName, '12345', steamId);
-
-          console.log(`[SWARM] Superviviente verificado y admitido de inmediato: ${targetPlayerName} (${nodeId})`);
+          console.log(`[SWARM] Solicitud de ingreso registrada para Bento OS: ${nodeId} (${assignedFaction})`);
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ 
             success: true, 
             nodeId, 
-            status: 'APPROVED', 
-            ticket: admissionTicket,
-            message: 'Nodo verificado y admitido en el enjambre.' 
+            status: 'PENDING', 
+            message: 'Solicitud enviada a Bento OS. Esperando autorización del Administrador.' 
           }));
         });
         return;

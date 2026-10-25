@@ -566,41 +566,11 @@ export default function App() {
       return;
     }
 
-    // Guardar facción del personaje
+    // Guardar facción preliminar
     recordCharacterFaction(finalPlayerName, selectedFactionData.id);
-    setApprovedFaction(selectedFactionData.id);
-    setChosenFaction(selectedFactionData.id);
 
-    handleShowToast({
-      title: isCreatingCharacter ? 'CREANDO SUPERVIVIENTE' : 'INICIANDO PROJECT ZOMBOID',
-      desc: `Conectando directo al servidor como ${finalPlayerName} (${selectedFactionData.tag})...`,
-      type: 'success'
-    });
-
-    const res = await launchProjectZomboid(localId.nodeId, selectedFactionData.tag, finalPlayerName, perfMode);
-    setIsCreatingCharacter(false);
-    await loadCharacters();
-    if (res.success) {
-      setIsGameRunning(true);
-      // ── ACTIVAR MOTOR DE FAILOVER ALFA ─────────────────────────────────
-      // Solo el anfitrión local (Creador / Nodo Alfa) activa el emitter de heartbeats.
-      const currentBridge = getSwarmBridgeUrl();
-      const isLocalHost = currentBridge.includes('localhost') || currentBridge.includes('127.0.0.1');
-      if (isLocalHost) {
-        const alfaRes = await activateAlfaEngine(localId.nodeId);
-        if (alfaRes.success) {
-          setAlfaStatus({ alfaEngineActive: true, alfaNodeId: localId.nodeId });
-          handleShowToast({
-            title: '🟢 NODO ALFA ACTIVO',
-            desc: 'Motor de Failover P2P iniciado. Heartbeats cada 5s.',
-            type: 'success'
-          });
-        }
-      }
-      // ───────────────────────────────────────────────────────────────────
-    } else {
-      setShowLaunchModal(true);
-    }
+    // Abrir obligatoriamente el LaunchModal de verificación criptográfica y autorización con Bento OS
+    setShowLaunchModal(true);
   };
 
   const handleMouseMove = (e) => {

@@ -8,12 +8,12 @@
     "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.7",
-  "minRequiredVersion": "1.2.7",
+  "latestVersion": "1.2.8",
+  "minRequiredVersion": "1.2.8",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "2f2ffcf8c16f5232b7cd2e34c096ec3ea114dd54d2551ef1e9d3a625ed056919",
-  "changelog": "Versión 1.2.7: Blindaje total con pcall contra errores de Lua en clientes remotos. Espera segura de renderizado OnTick y resolución automática de IP LAN para host.",
-  "updatedAt": "2026-10-25T19:45:00.000Z",
-  "installerSha256": "2f2ffcf8c16f5232b7cd2e34c096ec3ea114dd54d2551ef1e9d3a625ed056919"
+  "sha256": "b7b024dae7a05bea8d3d3bf9465ec9a8696a56506d9524c14b7e32dbdb104956",
+  "changelog": "Versión 1.2.8: Flujo estricto de autorización con Bento OS. Verificación obligatoria de Whitelist antes de iniciar el juego y sincronización en tiempo real de aspirantes.",
+  "updatedAt": "2026-10-25T20:12:00.000Z",
+  "installerSha256": "b7b024dae7a05bea8d3d3bf9465ec9a8696a56506d9524c14b7e32dbdb104956"
 }
