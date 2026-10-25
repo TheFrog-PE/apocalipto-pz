@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://angels-algorithm-been-documented.trycloudflare.com",
+  "gatewayUrl": "https://assure-interaction-enclosed-exhibitions.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63855,
@@ -12,6 +12,6 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "9122908347c69821dea4e6676a0c9d9153ae1c99832c6563807970a35058672f",
   "changelog": "Versión 1.2.2: Auto-limpieza de puente efímero para mantener el cliente vanilla, resolución de puertos Playit y auto-conexión directa.",
-  "updatedAt": "2026-10-25T14:50:54.263Z",
+  "updatedAt": "2026-10-25T14:53:24.380Z",
   "installerSha256": "9122908347c69821dea4e6676a0c9d9153ae1c99832c6563807970a35058672f"
 }
