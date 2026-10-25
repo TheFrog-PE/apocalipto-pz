@@ -340,109 +340,137 @@ end
 local function readTicket()
     if ticketLoaded then return ticketLoaded end
     local ticket = nil
+    
+    -- 1. Leer archivo INI en cache Lua de Zomboid
     pcall(function()
         local fname = "apocalipto_launch_ticket.ini"
         local reader = getFileReader(fname, false)
         if not reader then
             reader = getFileReader("Lua/apocalipto_launch_ticket.ini", false)
         end
-        if not reader then
-            return
-        end
-        ticket = {}
-        while true do
-            local line = reader:readLine()
-            if line == nil then break end
-            line = string.trim(line)
-            if line ~= "" and string.sub(line, 1, 1) ~= "#" then
-                local sep = string.find(line, "=")
-                if sep then
-                    local k = string.trim(string.sub(line, 1, sep - 1))
-                    local v = string.trim(string.sub(line, sep + 1))
-                    ticket[k] = v
+        if reader then
+            ticket = {}
+            while true do
+                local line = reader:readLine()
+                if line == nil then break end
+                line = string.trim(line)
+                if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+                    local sep = string.find(line, "=")
+                    if sep then
+                        local k = string.trim(string.sub(line, 1, sep - 1))
+                        local v = string.trim(string.sub(line, sep + 1))
+                        ticket[k] = v
+                    end
                 end
             end
-        end
-        reader:close()
-        if ticket and ticket.user and ticket.ip then
-            safeLog("Ticket detectado: usuario=" .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
+            reader:close()
         end
     end)
-    ticketLoaded = ticket
+
+    -- 2. Si el INI no esta o fallo, rescatar de ServerList.db (Favoritos inyectados por el Launcher)
+    if not ticket or not ticket.user or not ticket.ip then
+        pcall(function()
+            if getServerList then
+                local servers = getServerList()
+                if servers then
+                    for _, s in ipairs(servers) do
+                        local sName = tostring(s:getName() or "")
+                        if string.find(sName, "Apocalipto") or string.find(sName, "apocalipto") then
+                            ticket = {
+                                user = s:getUserName(),
+                                password = s:getPassword() or "12345",
+                                ip = s:getIp(),
+                                port = tostring(s:getPort()),
+                                serverName = s:getName(),
+                                faction = "MOK"
+                            }
+                            safeLog("Ticket rescatado desde ServerList: " .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
+                            break
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    if ticket and ticket.user and ticket.ip then
+        safeLog("Ticket verificado: usuario=" .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
+        ticketLoaded = ticket
+    end
     return ticket
 end
 
 -- Ejecutar Conexión Directa Automática protegida
 local function tryConnect()
     if bridgeRan then return true end
-    
-    local ok, success = pcall(function()
-        if isClient and isClient() then return true end
-        if isIngameState and isIngameState() then return true end
 
-        local ticket = readTicket()
-        if not ticket or not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then
-            return false
-        end
-
-        local mainScreen = MainScreen and MainScreen.instance
-        local connectUI = (ConnectToServer and ConnectToServer.instance) or (mainScreen and mainScreen.connectToServer)
-
-        if not mainScreen or not connectUI then
-            return false
-        end
-
-        if (not connectUI.title or not connectUI.connectLabel) and connectUI.create then
-            pcall(function() connectUI:create() end)
-        end
-
-        local targetPort = tostring(ticket.port or 63854)
-        if targetPort == "63855" then targetPort = "63854" end
-
-        safeLog("Conectando como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. targetPort)
-
-        if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
-        _G.ApocaliptoSession.faction = ticket.faction or "MOK"
-        _G.ApocaliptoSession.user = ticket.user
-        _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
-
-        if mainScreen.bottomPanel then mainScreen.bottomPanel:setVisible(false) end
-        if mainScreen.animPopup then pcall(function() mainScreen.animPopup:removeFromUIManager() end) end
-        if mainScreen.bootstrapConnectPopup then mainScreen.bootstrapConnectPopup:setVisible(false) end
-
-        connectUI:connect(
-            mainScreen.bottomPanel or mainScreen,
-            ticket.serverName or "Apocalipto PZ",
-            ticket.user,
-            ticket.password or "12345",
-            ticket.ip,
-            "",
-            targetPort,
-            "",
-            false,
-            true,
-            1
-        )
-        return true
-    end)
-
-    if ok and success then
-        bridgeRan = true
-        safeLog("Orden ConnectToServer:connect() despachada exitosamente al motor de red.")
-        return true
+    local mainScreen = MainScreen and MainScreen.instance
+    if not mainScreen or not mainScreen.bottomPanel then
+        return false
     end
-    return false
+
+    local connectUI = (ConnectToServer and ConnectToServer.instance) or mainScreen.connectToServer
+    if not connectUI then
+        return false
+    end
+
+    local ticket = readTicket()
+    if not ticket or not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then
+        return false
+    end
+
+    if connectUI.create and not connectUI.title then
+        pcall(function() connectUI:create() end)
+    end
+
+    local targetPort = tostring(ticket.port or 63854)
+    if targetPort == "63855" then targetPort = "63854" end
+
+    safeLog("CONEXION AUTOMATICA: Conectando como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. targetPort)
+
+    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
+    _G.ApocaliptoSession.faction = ticket.faction or "MOK"
+    _G.ApocaliptoSession.user = ticket.user
+    _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
+
+    if mainScreen.bottomPanel then mainScreen.bottomPanel:setVisible(false) end
+    if mainScreen.animPopup then pcall(function() mainScreen.animPopup:removeFromUIManager() end) end
+    if mainScreen.bootstrapConnectPopup then mainScreen.bootstrapConnectPopup:setVisible(false) end
+
+    bridgeRan = true
+    connectUI:connect(
+        mainScreen.bottomPanel or mainScreen,
+        ticket.serverName or "Apocalipto PZ",
+        ticket.user,
+        ticket.password or "12345",
+        ticket.ip,
+        "",
+        targetPort,
+        "",
+        false,
+        true,
+        1
+    )
+    safeLog("ConnectToServer:connect() invocado con exito.")
+    return true
 end
 
--- Manejador de Ticks para Espera Segura
+-- Manejador de Ticks para Detección Continua
 local function onBridgeTick()
     pcall(function()
         hookMapSpawnSelect()
         tickWait = tickWait + 1
-        -- Esperar 30 ticks (~0.5s) para asegurar que el arbol visual exista en RAM
-        if tickWait >= 30 then
+
+        -- Si el jugador ya esta dentro del juego o conectando, remover listener
+        if isClient and isClient() then
+            if Events.OnTick then Events.OnTick.Remove(onBridgeTick) end
+            return
+        end
+
+        -- Esperar al menos 15 ticks (~250ms) para que MainScreen exista en RAM
+        if tickWait >= 15 then
             if tryConnect() then
-                safeLog("Conexion iniciada. Removiendo tick listener.")
+                safeLog("Conexion lanzada al servidor. Removiendo tick listener.")
                 if Events.OnTick then
                     Events.OnTick.Remove(onBridgeTick)
                 end
@@ -456,19 +484,12 @@ local function onBridgeTick()
     end)
 end
 
--- Inicialización Protegida sin hooks intrusivos
+-- Inicialización Inmediata a nivel de archivo (Cero dependencia de OnMainMenuEnter)
 pcall(function()
     hookMapSpawnSelect()
-    if Events.OnMainMenuEnter then
-        Events.OnMainMenuEnter.Add(function()
-            pcall(function()
-                hookMapSpawnSelect()
-                tickWait = 0
-                if not bridgeRan and Events.OnTick then
-                    Events.OnTick.Add(onBridgeTick)
-                end
-            end)
-        end)
+    if Events.OnTick then
+        Events.OnTick.Add(onBridgeTick)
+        safeLog("Listener OnTick activo para auto-conexion inmediata al llegar al menu.")
     end
 end)
 "##
@@ -512,6 +533,11 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             faction.trim().to_string()
         };
 
+        let ticket_content = format!(
+            "user={}\nfaction={}\nip={}\nport={}\nserverName=Apocalipto PZ\npassword=12345\n",
+            clean_user, clean_faction, clean_ip, clean_port
+        );
+
         // 1. Inyectar configuración de sesión en %USERPROFILE%/Zomboid del jugador
         if let Some(user_profile) = std::env::var_os("USERPROFILE") {
             let zomboid_dir = PathBuf::from(&user_profile).join("Zomboid");
@@ -521,10 +547,6 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             // Escribir ticket efímero de conexión automática directa
             let ticket_path = zomboid_dir.join("apocalipto_launch_ticket.ini");
             let lua_ticket_path = lua_dir.join("apocalipto_launch_ticket.ini");
-            let ticket_content = format!(
-                "user={}\nfaction={}\nip={}\nport={}\nserverName=Apocalipto PZ\npassword=12345\n",
-                clean_user, clean_faction, clean_ip, clean_port
-            );
             let _ = fs::write(&ticket_path, &ticket_content);
             let _ = fs::write(&lua_ticket_path, &ticket_content);
 
@@ -655,28 +677,12 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                 // (consulta A2S). Si falla → "El servidor no ha respondido". En su lugar, nuestro
                 // bridge lee el ticket efímero en OnMainMenuEnter y conecta directamente vía
                 // ConnectToServer:connect(), bypaseando A2S por completo.
+                let _ = fs::write(pz_dir.join("apocalipto_launch_ticket.ini"), &ticket_content);
                 let spawn_res = std::process::Command::new(&pz_exe)
                     .current_dir(pz_dir)
                     .spawn();
 
-                if let Ok(mut child) = spawn_res {
-                    let bp_cleanup = bridge_path.clone();
-                    // Sandbox Watcher: Hilo guardián en segundo plano
-                    std::thread::spawn(move || {
-                        // Paso A: A los 15s borra el puente de disco en clientes (PZ ya lo leyó en RAM).
-                        // En la máquina anfitrión del servidor se preserva para no invalidar el Dedicated Server.
-                        std::thread::sleep(std::time::Duration::from_secs(15));
-                        if !is_host_server_node() {
-                            let _ = fs::remove_file(&bp_cleanup);
-                        }
-
-                        // Paso B: Espera a que el proceso de PZ termine (normal, cierre, crash)
-                        let _ = child.wait();
-
-                        // Paso C: Restauración y limpieza total post-partida
-                        run_full_vanilla_sanitization();
-                    });
-
+                if spawn_res.is_ok() {
                     return Ok(format!("Project Zomboid iniciado con Sandbox Activo: {:?}", pz_exe));
                 }
             }
@@ -684,11 +690,13 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
         // Fallback 1: Si encontramos steam.exe, lanzar con -applaunch 108600
         if let Some(steam_dir) = get_steam_path_from_registry() {
-            let steam_client_lua = PathBuf::from(&steam_dir).join("steamapps").join("common").join("ProjectZomboid").join("media").join("lua").join("client");
+            let pz_steam_dir = PathBuf::from(&steam_dir).join("steamapps").join("common").join("ProjectZomboid");
+            let steam_client_lua = pz_steam_dir.join("media").join("lua").join("client");
             let _ = fs::create_dir_all(&steam_client_lua);
 
             let bridge_path = steam_client_lua.join("ApocaliptoConnectBridge.lua");
             let _ = fs::write(&bridge_path, build_bridge_lua_code());
+            let _ = fs::write(pz_steam_dir.join("apocalipto_launch_ticket.ini"), &ticket_content);
 
             let steam_exe = PathBuf::from(&steam_dir).join("steam.exe");
             if steam_exe.exists() {
@@ -699,20 +707,6 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                     .spawn();
 
                 if res.is_ok() {
-                    let bp_cleanup = bridge_path.clone();
-                    std::thread::spawn(move || {
-                        std::thread::sleep(std::time::Duration::from_secs(15));
-                        if !is_host_server_node() {
-                            let _ = fs::remove_file(&bp_cleanup);
-                        }
-
-                        // Monitorear hasta que el juego se cierre
-                        while is_game_running() {
-                            std::thread::sleep(std::time::Duration::from_secs(2));
-                        }
-                        run_full_vanilla_sanitization();
-                    });
-
                     return Ok("Project Zomboid iniciado vía Steam -applaunch 108600".into());
                 }
             }
