@@ -12,8 +12,8 @@
   "minRequiredVersion": "1.2.8",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "ccf9f45bc29a70a763fcee8994fdfa567a50e12675b17dfe451e61bf711a6c62",
-  "changelog": "Versión 1.2.9: Conexión directa ultra-robusta a Build 42 sin quedarse en menú principal. Aprobación instantánea con Bento OS y auto-lanzamiento al aprobar aspirantes.",
-  "updatedAt": "2026-10-25T22:07:00.000Z",
-  "installerSha256": "ccf9f45bc29a70a763fcee8994fdfa567a50e12675b17dfe451e61bf711a6c62"
+  "sha256": "96738cf455982108c8891e9a235c1d6ac9952f861a26c1e25e52e9f17d2319dd",
+  "changelog": "Versión 1.2.9: Conexión directa ultra-robusta a Build 42 en MainScreen prerender. Aprobación instantánea con Bento OS.",
+  "updatedAt": "2026-10-25T22:31:00.000Z",
+  "installerSha256": "96738cf455982108c8891e9a235c1d6ac9952f861a26c1e25e52e9f17d2319dd"
 }

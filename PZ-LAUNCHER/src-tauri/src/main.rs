@@ -400,7 +400,7 @@ local function readTicket()
     return ticket
 end
 
--- Ejecutar Conexión Directa Automática protegida
+-- Intento de conexión
 local function tryConnect()
     if bridgeRan then return true end
 
@@ -423,9 +423,7 @@ local function tryConnect()
         pcall(function() connectUI:create() end)
     end
 
-    local targetPort = tostring(ticket.port or 63854)
-    if targetPort == "63855" then targetPort = "63854" end
-
+    local targetPort = tostring(ticket.port or 16261)
     safeLog("CONEXION AUTOMATICA: Conectando como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. targetPort)
 
     if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
@@ -438,58 +436,84 @@ local function tryConnect()
     if mainScreen.bootstrapConnectPopup then mainScreen.bootstrapConnectPopup:setVisible(false) end
 
     bridgeRan = true
-    connectUI:connect(
-        mainScreen.bottomPanel or mainScreen,
-        ticket.serverName or "Apocalipto PZ",
-        ticket.user,
-        ticket.password or "12345",
-        ticket.ip,
-        "",
-        targetPort,
-        "",
-        false,
-        true,
-        1
-    )
+
+    pcall(function()
+        connectUI:connect(
+            mainScreen.bottomPanel or mainScreen,
+            ticket.serverName or "Apocalipto PZ",
+            ticket.user,
+            ticket.password or "12345",
+            ticket.ip,
+            "",
+            targetPort,
+            "",
+            false,
+            true,
+            1
+        )
+    end)
     safeLog("ConnectToServer:connect() invocado con exito.")
     return true
 end
 
--- Manejador de Ticks para Detección Continua
-local function onBridgeTick()
+-- Hook dinámico a MainScreen
+local function setupHooks()
     pcall(function()
         hookMapSpawnSelect()
-        tickWait = tickWait + 1
+        
+        if MainScreen and not MainScreen._apocaliptoHooked then
+            MainScreen._apocaliptoHooked = true
 
-        -- Si el jugador ya esta dentro del juego o conectando, remover listener
-        if isClient and isClient() then
-            if Events.OnTick then Events.OnTick.Remove(onBridgeTick) end
-            return
-        end
-
-        -- Esperar al menos 15 ticks (~250ms) para que MainScreen exista en RAM
-        if tickWait >= 15 then
-            if tryConnect() then
-                safeLog("Conexion lanzada al servidor. Removiendo tick listener.")
-                if Events.OnTick then
-                    Events.OnTick.Remove(onBridgeTick)
+            local old_prerender = MainScreen.prerender
+            MainScreen.prerender = function(self, ...)
+                local res
+                if old_prerender then res = old_prerender(self, ...) end
+                if not bridgeRan then
+                    pcall(tryConnect)
                 end
-            elseif tickWait > 3600 then
-                safeLog("Timeout de espera de conexion (60s sin ticket).")
-                if Events.OnTick then
-                    Events.OnTick.Remove(onBridgeTick)
-                end
+                return res
             end
+
+            local old_render = MainScreen.render
+            MainScreen.render = function(self, ...)
+                local res
+                if old_render then res = old_render(self, ...) end
+                if not bridgeRan then
+                    pcall(tryConnect)
+                end
+                return res
+            end
+
+            local old_OnTick = MainScreen.OnTick
+            MainScreen.OnTick = function(...)
+                local res
+                if old_OnTick then res = old_OnTick(...) end
+                if not bridgeRan then
+                    pcall(tryConnect)
+                end
+                return res
+            end
+
+            safeLog("MainScreen hooks inyectados con exito.")
         end
     end)
 end
 
--- Inicialización Inmediata a nivel de archivo (Cero dependencia de OnMainMenuEnter)
+-- Cargar inmediatamente y registrar en eventos del motor
 pcall(function()
-    hookMapSpawnSelect()
-    if Events.OnTick then
-        Events.OnTick.Add(onBridgeTick)
-        safeLog("Listener OnTick activo para auto-conexion inmediata al llegar al menu.")
+    setupHooks()
+    if Events.OnMainMenuEnter then
+        Events.OnMainMenuEnter.Add(function()
+            safeLog("OnMainMenuEnter disparado.")
+            setupHooks()
+            tryConnect()
+        end)
+    end
+    if Events.OnResolutionChange then
+        Events.OnResolutionChange.Add(function()
+            setupHooks()
+            tryConnect()
+        end)
     end
 end)
 "##
