@@ -633,8 +633,8 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
     }
 
     // 4. Lanzar Project Zomboid conectando directamente al servidor de Apocalipto PZ
-    // IP pública del túnel Playit o loopback local si es anfitrión
-    const connectTarget = !isLocal ? `${targetHost}:${targetPort}` : '127.0.0.1:16261';
+    // IP pública del túnel Playit o LAN IP del anfitrión (Steam Networking rechaza 127.0.0.1)
+    const connectTarget = !isLocal ? `${targetHost}:${targetPort}` : '192.168.0.101:16261';
     let nativeLaunched = false;
 
     // A. Ejecutar comando nativo de Tauri (rundll32 a nivel de Windows OS, CERO advertencias de WebView2)

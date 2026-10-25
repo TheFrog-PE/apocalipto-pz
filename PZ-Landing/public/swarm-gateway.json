@@ -8,12 +8,12 @@
     "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.6",
-  "minRequiredVersion": "1.2.6",
+  "latestVersion": "1.2.7",
+  "minRequiredVersion": "1.2.7",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "2115747173037b9b0e9096c504fde6c029c9cc12b3e8ffa9747e37938c55f121",
-  "changelog": "Versión 1.2.6: Eliminación total de +connect para bypass absoluto de BootstrapConnectPopup y errores A2S. Conexión directa ultra-estable por ticket en memoria.",
-  "updatedAt": "2026-10-25T18:28:00.000Z",
-  "installerSha256": "2115747173037b9b0e9096c504fde6c029c9cc12b3e8ffa9747e37938c55f121"
+  "sha256": "2f2ffcf8c16f5232b7cd2e34c096ec3ea114dd54d2551ef1e9d3a625ed056919",
+  "changelog": "Versión 1.2.7: Blindaje total con pcall contra errores de Lua en clientes remotos. Espera segura de renderizado OnTick y resolución automática de IP LAN para host.",
+  "updatedAt": "2026-10-25T19:45:00.000Z",
+  "installerSha256": "2f2ffcf8c16f5232b7cd2e34c096ec3ea114dd54d2551ef1e9d3a625ed056919"
 }

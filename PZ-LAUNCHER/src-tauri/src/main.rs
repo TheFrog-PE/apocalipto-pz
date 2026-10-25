@@ -259,34 +259,144 @@ fn run_full_vanilla_sanitization() {
 /// de modo que NINGÚN archivo original en disco sea modificado jamás.
 fn build_bridge_lua_code() -> &'static str {
     r##"-- [APOCALIPTO PZ] Puente de Conexión Automática Seguro y Sandbox en Memoria
-local ticketChecked = false
-local pendingTicket = nil
-local tickAttempts = 0
+local bridgeRan = false
+local tickWait = 0
+local ticketLoaded = nil
 
-local function doApocaliptoConnect(ticket)
-    if not ticket or not ticket.user or ticket.user == "" then return false end
-    local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
-    local mainScreen = MainScreen and MainScreen.instance
+local function safeLog(msg)
+    pcall(function() print("[APOCALIPTO PZ] " .. tostring(msg)) end)
+end
 
-    if connectUI and mainScreen then
+-- Hook de Selección de Spawn por Facción en Memoria
+local function hookMapSpawnSelect()
+    pcall(function()
+        if MapSpawnSelect and not _G.ApocaliptoSpawnHooked then
+            _G.ApocaliptoSpawnHooked = true
+            
+            local old_hasChoices = MapSpawnSelect.hasChoices
+            MapSpawnSelect.hasChoices = function(self)
+                local targetFaction = (_G.ApocaliptoSession and _G.ApocaliptoSession.faction)
+                if not targetFaction then
+                    pcall(function()
+                        local r = getFileReader("apocalipto_faction.txt", false)
+                        if r then
+                            local l = r:readLine()
+                            if l then targetFaction = string.trim(tostring(l)) end
+                            r:close()
+                        end
+                    end)
+                end
+                if targetFaction and targetFaction ~= "" then
+                    return false
+                end
+                if old_hasChoices then return old_hasChoices(self) end
+                local regions = self:getSpawnRegions()
+                return regions and #regions > 1
+            end
+
+            local old_useDefault = MapSpawnSelect.useDefaultSpawnRegion
+            MapSpawnSelect.useDefaultSpawnRegion = function(self)
+                self.selectedRegion = nil
+                local regions = self:getSpawnRegions()
+                if regions and #regions > 0 then
+                    local targetFaction = (_G.ApocaliptoSession and _G.ApocaliptoSession.faction)
+                    if not targetFaction then
+                        pcall(function()
+                            local r = getFileReader("apocalipto_faction.txt", false)
+                            if r then
+                                local l = r:readLine()
+                                if l then targetFaction = string.trim(tostring(l)) end
+                                r:close()
+                            end
+                        end)
+                    end
+
+                    if targetFaction and targetFaction ~= "" then
+                        local fTag = string.upper(tostring(targetFaction))
+                        for _, r in ipairs(regions) do
+                            if string.find(string.upper(tostring(r.name)), fTag) then
+                                self.selectedRegion = r
+                                setSpawnRegion(r.name)
+                                getCore():setSelectedMap(tostring(r.name))
+                                safeLog("Spawn auto-asignado a territorio: " .. tostring(r.name))
+                                return self.selectedRegion
+                            end
+                        end
+                    end
+
+                    if old_useDefault then return old_useDefault(self) end
+                    self.selectedRegion = regions[1]
+                    setSpawnRegion(self.selectedRegion.name)
+                    getCore():setSelectedMap(tostring(self.selectedRegion.name))
+                    return self.selectedRegion
+                end
+            end
+            safeLog("MapSpawnSelect hookeado dinamicamente con exito.")
+        end
+    end)
+end
+
+-- Cargar Ticket de Lanzamiento de forma 100% segura
+local function readTicket()
+    if ticketLoaded then return ticketLoaded end
+    local ticket = nil
+    pcall(function()
+        local fname = "apocalipto_launch_ticket.ini"
+        local reader = getFileReader(fname, false)
+        if not reader then return end
+        ticket = {}
+        while true do
+            local line = reader:readLine()
+            if line == nil then break end
+            line = string.trim(line)
+            if line ~= "" and string.sub(line, 1, 1) ~= "#" then
+                local sep = string.find(line, "=")
+                if sep then
+                    local k = string.trim(string.sub(line, 1, sep - 1))
+                    local v = string.trim(string.sub(line, sep + 1))
+                    ticket[k] = v
+                end
+            end
+        end
+        reader:close()
+    end)
+    ticketLoaded = ticket
+    return ticket
+end
+
+-- Ejecutar Conexión Directa Automática protegida
+local function tryConnect()
+    if bridgeRan then return true end
+    
+    local ok, success = pcall(function()
+        if isClient and isClient() then return true end
+        if isIngameState and isIngameState() then return true end
+
+        local ticket = readTicket()
+        if not ticket or not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then
+            return false
+        end
+
+        local mainScreen = MainScreen and MainScreen.instance
+        local connectUI = (ConnectToServer and ConnectToServer.instance) or (mainScreen and mainScreen.connectToServer)
+
+        if not mainScreen or not connectUI or not connectUI.title or not connectUI.connectLabel then
+            return false
+        end
+
         local targetPort = tostring(ticket.port or 63854)
         if targetPort == "63855" then targetPort = "63854" end
-        print("[APOCALIPTO PZ] Auto-conectando directamente como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. targetPort)
-        
+
+        safeLog("Conectando como '" .. tostring(ticket.user) .. "' -> " .. tostring(ticket.ip) .. ":" .. targetPort)
+
         if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
         _G.ApocaliptoSession.faction = ticket.faction or "MOK"
         _G.ApocaliptoSession.user = ticket.user
         _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
 
-        if mainScreen.bottomPanel then
-            mainScreen.bottomPanel:setVisible(false)
-        end
-        if mainScreen.animPopup then
-            mainScreen.animPopup:removeFromUIManager()
-        end
-        if mainScreen.bootstrapConnectPopup then
-            mainScreen.bootstrapConnectPopup:setVisible(false)
-        end
+        if mainScreen.bottomPanel then mainScreen.bottomPanel:setVisible(false) end
+        if mainScreen.animPopup then pcall(function() mainScreen.animPopup:removeFromUIManager() end) end
+        if mainScreen.bootstrapConnectPopup then mainScreen.bootstrapConnectPopup:setVisible(false) end
 
         connectUI:connect(
             mainScreen.bottomPanel or mainScreen,
@@ -302,224 +412,52 @@ local function doApocaliptoConnect(ticket)
             1
         )
         return true
+    end)
+
+    if ok and success then
+        bridgeRan = true
+        pcall(function()
+            local eraser = getFileWriter("apocalipto_launch_ticket.ini", true, false)
+            if eraser then eraser:close() end
+        end)
+        return true
     end
     return false
 end
 
--- Hook dinámico sobre BootstrapConnectPopup y ServerConnectPopup
-local function hookPopups()
-    if BootstrapConnectPopup and not _G.ApocaliptoBootstrapHooked then
-        _G.ApocaliptoBootstrapHooked = true
-
-        local orig_connect = BootstrapConnectPopup.connect
-        BootstrapConnectPopup.connect = function(self, host, port, serverPassword)
-            self:setVisible(false)
-            if MainScreen and MainScreen.instance and MainScreen.instance.bottomPanel then
-                MainScreen.instance.bottomPanel:setVisible(false)
-            end
-            local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or "Superviviente"
-            local sPwd = "12345"
-
-            local reader = getFileReader("apocalipto_launch_ticket.ini", false)
-            if reader then
-                while true do
-                    local line = reader:readLine()
-                    if line == nil then break end
-                    line = string.trim(line)
-                    local sep = string.find(line, "=")
-                    if sep then
-                        local k = string.trim(string.sub(line, 1, sep - 1))
-                        local v = string.trim(string.sub(line, sep + 1))
-                        if k == "user" and v ~= "" then uName = v end
-                        if k == "password" and v ~= "" then sPwd = v end
-                    end
-                end
-                reader:close()
-            end
-
-            local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
-            if connectUI then
-                local targetPort = tostring(port or 63854)
-                if targetPort == "63855" then targetPort = "63854" end
-                print("[APOCALIPTO PZ] Bypass de BootstrapConnectPopup: Conectando directo a " .. tostring(host) .. ":" .. targetPort)
-                connectUI:connect(self, "Apocalipto PZ", uName, sPwd, host, "", targetPort, "", false, true, 1)
-                return
-            end
-            if orig_connect then orig_connect(self, host, port, serverPassword) end
-        end
-
-        local orig_failed = BootstrapConnectPopup.OnSteamServerFailedToRespond2
-        BootstrapConnectPopup.OnSteamServerFailedToRespond2 = function(self, host, port)
-            print("[APOCALIPTO PZ] Steam A2S query fallback activo para " .. tostring(host) .. ":" .. tostring(port))
-            self.connecting = false
-            self:setVisible(false)
-            local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user) or "Superviviente"
-            local sPwd = "12345"
-            local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
-            if connectUI then
-                local targetPort = tostring(port or 63854)
-                if targetPort == "63855" then targetPort = "63854" end
-                connectUI:connect(self, "Apocalipto PZ", uName, sPwd, host, "", targetPort, "", false, true, 1)
-                return
-            end
-            if orig_failed then orig_failed(self, host, port) end
-        end
-    end
-
-    if ServerConnectPopup and not _G.ApocaliptoServerConnectHooked then
-        _G.ApocaliptoServerConnectHooked = true
-        local orig_setServer = ServerConnectPopup.setServer
-        ServerConnectPopup.setServer = function(self, ip, port, passwordStr)
-            if orig_setServer then orig_setServer(self, ip, port, passwordStr) end
-            local uName = (_G.ApocaliptoSession and _G.ApocaliptoSession.user)
-            if uName and uName ~= "" then
-                self.usernameEntry:setText(uName)
-                self.passwordEntry:setText("12345")
-                if self.serverPasswordEntry then self.serverPasswordEntry:setText("") end
-                self:setVisible(false)
-                local connectUI = (ConnectToServer and ConnectToServer.instance) or (MainScreen and MainScreen.instance and MainScreen.instance.connectToServer)
-                if connectUI then
-                    local targetPort = tostring(port or 63854)
-                    if targetPort == "63855" then targetPort = "63854" end
-                    connectUI:connect(self, "Apocalipto PZ", uName, "12345", ip, "", targetPort, "", false, true, 1)
+-- Manejador de Ticks para Espera Segura
+local function onBridgeTick()
+    pcall(function()
+        hookMapSpawnSelect()
+        tickWait = tickWait + 1
+        -- Esperar 30 ticks (~0.5s) para asegurar que todo el árbol visual exista en RAM
+        if tickWait >= 30 then
+            if tryConnect() or tickWait > 180 then
+                if Events.OnTick then
+                    Events.OnTick.Remove(onBridgeTick)
                 end
             end
         end
-    end
-end
-
--- Hook sobre MapSpawnSelect en memoria: Enrutamiento forzado por facción SIN tocar MapSpawnSelect.lua en disco
-local function hookMapSpawnSelect()
-    if MapSpawnSelect and not _G.ApocaliptoSpawnHooked then
-        _G.ApocaliptoSpawnHooked = true
-        
-        local old_hasChoices = MapSpawnSelect.hasChoices
-        MapSpawnSelect.hasChoices = function(self)
-            local targetFaction = (_G.ApocaliptoSession and _G.ApocaliptoSession.faction)
-            if not targetFaction then
-                pcall(function()
-                    local r = getFileReader("apocalipto_faction.txt", false)
-                    if r then
-                        local l = r:readLine()
-                        if l then targetFaction = string.trim(tostring(l)) end
-                        r:close()
-                    end
-                end)
-            end
-            if targetFaction and targetFaction ~= "" then
-                return false
-            end
-            if old_hasChoices then return old_hasChoices(self) end
-            local regions = self:getSpawnRegions()
-            return regions and #regions > 1
-        end
-
-        local old_useDefault = MapSpawnSelect.useDefaultSpawnRegion
-        MapSpawnSelect.useDefaultSpawnRegion = function(self)
-            self.selectedRegion = nil
-            local regions = self:getSpawnRegions()
-            if regions and #regions > 0 then
-                local targetFaction = (_G.ApocaliptoSession and _G.ApocaliptoSession.faction)
-                if not targetFaction then
-                    pcall(function()
-                        local r = getFileReader("apocalipto_faction.txt", false)
-                        if r then
-                            local l = r:readLine()
-                            if l then targetFaction = string.trim(tostring(l)) end
-                            r:close()
-                        end
-                    end)
-                end
-
-                if targetFaction and targetFaction ~= "" then
-                    local fTag = string.upper(tostring(targetFaction))
-                    for _, r in ipairs(regions) do
-                        if string.find(string.upper(tostring(r.name)), fTag) then
-                            self.selectedRegion = r
-                            setSpawnRegion(r.name)
-                            getCore():setSelectedMap(tostring(r.name))
-                            print("[APOCALIPTO PZ] Spawn auto-asignado a territorio: " .. tostring(r.name))
-                            return self.selectedRegion
-                        end
-                    end
-                end
-
-                if old_useDefault then return old_useDefault(self) end
-                self.selectedRegion = regions[1]
-                setSpawnRegion(self.selectedRegion.name)
-                getCore():setSelectedMap(tostring(self.selectedRegion.name))
-                return self.selectedRegion
-            end
-        end
-        print("[APOCALIPTO PZ] MapSpawnSelect hookeado dinamicamente en RAM con exito.")
-    end
-end
-
--- Detección automática por Ticket Efímero al entrar al Menú Principal
-local function onTickTryConnect()
-    hookPopups()
-    hookMapSpawnSelect()
-    if not pendingTicket then return end
-    tickAttempts = tickAttempts + 1
-    if doApocaliptoConnect(pendingTicket) or tickAttempts > 60 then
-        pendingTicket = nil
-        if Events.OnTick then Events.OnTick.Remove(onTickTryConnect) end
-    end
-end
-
-local function checkApocaliptoLaunchTicket()
-    hookPopups()
-    hookMapSpawnSelect()
-    if ticketChecked then return end
-    ticketChecked = true
-    if isClient and isClient() then return end
-    if isIngameState and isIngameState() then return end
-
-    local fname = "apocalipto_launch_ticket.ini"
-    local reader = getFileReader(fname, false)
-    if not reader then return end
-
-    local ticket = {}
-    while true do
-        local line = reader:readLine()
-        if line == nil then break end
-        line = string.trim(line)
-        if line ~= "" and string.sub(line, 1, 1) ~= "#" then
-            local sep = string.find(line, "=")
-            if sep then
-                local k = string.trim(string.sub(line, 1, sep - 1))
-                local v = string.trim(string.sub(line, sep + 1))
-                ticket[k] = v
-            end
-        end
-    end
-    reader:close()
-
-    local eraser = getFileWriter(fname, true, false)
-    if eraser then eraser:close() end
-
-    if not ticket.user or ticket.user == "" or not ticket.ip or ticket.ip == "" then return end
-
-    if not _G.ApocaliptoSession then _G.ApocaliptoSession = {} end
-    _G.ApocaliptoSession.user = ticket.user
-    _G.ApocaliptoSession.faction = ticket.faction or "MOK"
-    _G.ApocaliptoSession.serverName = ticket.serverName or "Apocalipto PZ"
-
-    if not doApocaliptoConnect(ticket) then
-        pendingTicket = ticket
-        tickAttempts = 0
-        if Events.OnTick then Events.OnTick.Add(onTickTryConnect) end
-    end
-end
-
-hookPopups()
-hookMapSpawnSelect()
-if Events.OnMainMenuEnter then
-    Events.OnMainMenuEnter.Add(function()
-        hookPopups()
-        checkApocaliptoLaunchTicket()
     end)
 end
+
+-- Inicialización Protegida sin hooks intrusivos
+pcall(function()
+    hookMapSpawnSelect()
+    if Events.OnMainMenuEnter then
+        Events.OnMainMenuEnter.Add(function()
+            pcall(function()
+                hookMapSpawnSelect()
+                if not bridgeRan and Events.OnTick then
+                    Events.OnTick.Add(onBridgeTick)
+                end
+            end)
+        end)
+    end
+    if Events.OnTick then
+        Events.OnTick.Add(onBridgeTick)
+    end
+end)
 "##
 }
 
@@ -535,17 +473,18 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
             let final_port = if parsed_port == 63855 { 63854 } else { parsed_port };
             (ip.trim().to_string(), final_port)
         } else {
-            let default_p = if connect_address.trim() == "127.0.0.1" || connect_address.trim() == "localhost" { 16261 } else { 63854 };
+            let default_p = if connect_address.trim() == "127.0.0.1" || connect_address.trim() == "localhost" || connect_address.trim() == "192.168.0.101" { 16261 } else { 63854 };
             (connect_address.trim().to_string(), default_p)
         };
 
-        // Si el host es el dominio del túnel Playit, resolvemos su IP directa para evitar fallos de DNS
-        let clean_ip = if raw_host == "rails-switching.tun.ply.gg" {
-            "147.185.221.215".to_string()
-        } else if raw_host.is_empty() {
-            "127.0.0.1".to_string()
+        // Si el host es el dominio del túnel Playit, resolvemos su IP directa para evitar fallos de DNS.
+        // Si es loopback (127.0.0.1), cambiamos a la LAN IP del host (192.168.0.101) porque Steam Networking rechaza 127.0.0.1.
+        let (clean_ip, clean_port) = if raw_host == "rails-switching.tun.ply.gg" {
+            ("147.185.221.215".to_string(), clean_port)
+        } else if raw_host == "127.0.0.1" || raw_host == "localhost" || raw_host.is_empty() {
+            ("192.168.0.101".to_string(), 16261)
         } else {
-            raw_host
+            (raw_host, clean_port)
         };
 
         let clean_user = if username.trim().is_empty() {
@@ -657,7 +596,7 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                             |row| row.get(0),
                         );
 
-                        let b_pwd = "$2a$12$O/BFHoDFPrfFaNPAACmWpuDEg/if.yPvM8N9H/d4teUaiE1tyDEGu";
+                        let b_pwd = "12345";
 
                         if acc_exists.is_err() {
                             let _ = conn.execute(
