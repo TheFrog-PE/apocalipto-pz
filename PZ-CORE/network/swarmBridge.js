@@ -963,8 +963,37 @@ export class SwarmBridgeServer {
         this._atomicWrite(this.applicantsFile, []);
         this._atomicWrite(this.approvedNodesFile, {});
         this._atomicWrite(this.rejectedNodesFile, {});
+
+        const newEpoch = `wipe-${Date.now()}`;
+        this.worldEpoch = newEpoch;
+
+        try {
+          const gwPaths = [
+            path.resolve('public', 'swarm-gateway.json'),
+            path.resolve('PZ-Landing', 'public', 'swarm-gateway.json'),
+            path.resolve('PZ-LAUNCHER', 'public', 'swarm-gateway.json')
+          ];
+          for (const gp of gwPaths) {
+            if (fs.existsSync(gp)) {
+              const data = JSON.parse(fs.readFileSync(gp, 'utf8'));
+              data.worldEpoch = newEpoch;
+              data.updatedAt = new Date().toISOString();
+              fs.writeFileSync(gp, JSON.stringify(data, null, 2), 'utf8');
+            }
+          }
+        } catch {}
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: true, message: 'Enjambre reiniciado a cero con éxito.' }));
+        return res.end(JSON.stringify({ success: true, message: 'Enjambre reiniciado a cero con éxito.', worldEpoch: newEpoch }));
+      }
+
+      // 8a2. CONSULTA DE ÉPOCA / WIPE DEL MUNDO
+      if (req.method === 'GET' && url.pathname === '/api/swarm/world-info') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          worldEpoch: this.worldEpoch || '20261025-day1-reset',
+          serverName: 'Apocalipto PZ'
+        }));
       }
 
       // 8b. REINICIAR PERSONAJE DE UN NODO AUTORIZADO

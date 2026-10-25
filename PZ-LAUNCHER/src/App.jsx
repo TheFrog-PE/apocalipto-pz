@@ -141,6 +141,91 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // ── Sincronización Remota de Wipe del Servidor (worldEpoch) ──
+  useEffect(() => {
+    let active = true;
+    const checkWorldWipe = async () => {
+      try {
+        const urls = [
+          'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json',
+          'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json'
+        ];
+        let remoteEpoch = null;
+        for (const u of urls) {
+          try {
+            const res = await fetch(`${u}?_t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.worldEpoch) {
+                remoteEpoch = String(data.worldEpoch);
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        if (!remoteEpoch) {
+          try {
+            const bridgeUrl = getSwarmBridgeUrl();
+            const res = await fetch(`${bridgeUrl}/api/swarm/world-info`, { signal: AbortSignal.timeout(2000) });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.worldEpoch) remoteEpoch = String(data.worldEpoch);
+            }
+          } catch {}
+        }
+
+        if (!active || !remoteEpoch) return;
+
+        const localEpoch = localStorage.getItem('apocalipto_last_world_epoch');
+        if (localEpoch !== remoteEpoch) {
+          console.log('[WORLD_WIPE] Sincronizando wipe remoto. Nueva era:', remoteEpoch);
+
+          // 1. Limpiar todos los personajes de las bases de datos locales de SQLite
+          try {
+            const chars = await fetchSavedCharacters();
+            if (chars && chars.length > 0) {
+              for (const ch of chars) {
+                await removeSavedCharacter(ch.username);
+              }
+            }
+          } catch {}
+
+          // 2. Limpiar tickets y caché local de navegador/Tauri
+          try {
+            localStorage.removeItem('apocalipto_admission_ticket');
+            localStorage.removeItem('apocalipto_chosen_faction');
+            localStorage.removeItem('pz_survivor_name');
+          } catch {}
+
+          // 3. Registrar la nueva época para no volver a limpiar hasta el próximo wipe
+          localStorage.setItem('apocalipto_last_world_epoch', remoteEpoch);
+
+          // 4. Actualizar estado visual
+          setSavedCharacters([]);
+          setSurvivorName('');
+          setChosenFaction(null);
+          setApprovedFaction(null);
+          setIsCreatingCharacter(false);
+          setShowLaunchModal(false);
+
+          handleShowToast({
+            title: 'NUEVA ERA: REINICIO DE MUNDO (DÍA 1)',
+            desc: 'El Creador ha iniciado un nuevo ciclo de supervivencia. Tus slots locales se han limpiado para una partida fresca.',
+            type: 'info'
+          });
+        }
+      } catch {}
+    };
+
+    checkWorldWipe();
+    const interval = setInterval(checkWorldWipe, 15000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const handleSelectCharacter = (char) => {
     if (!char) return;
     setSurvivorName(char.username);

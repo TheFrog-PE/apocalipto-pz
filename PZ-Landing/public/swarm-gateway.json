@@ -7,11 +7,12 @@
     "queryPort": 63854
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.3",
-  "minRequiredVersion": "1.2.3",
+  "latestVersion": "1.2.4",
+  "minRequiredVersion": "1.2.4",
+  "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "17aa8e1ad22d3af021f597735c15d8b602498307e5e26202dd557d20a9b3db51",
-  "changelog": "Versión 1.2.3: Arquitectura Vanilla Sandbox completa. Auto-curación de MapSpawnSelect y ServerConnectPopup sin tocar archivos de Steam en disco. Cero DoLuaChecksum kicks en otros servidores.",
-  "updatedAt": "2026-10-25T15:46:29.939Z",
-  "installerSha256": "17aa8e1ad22d3af021f597735c15d8b602498307e5e26202dd557d20a9b3db51"
+  "sha256": "8568d4ecd2bf7f84db53f67e16d7d6a3fbf0630722bcf0c79530cebdd4f2b6af",
+  "changelog": "Versión 1.2.4: Sincronización remota de Wipe de Mundo (worldEpoch). Auto-limpieza de slots antiguos y bienvenida automática al Día 1.",
+  "updatedAt": "2026-10-25T16:41:00.000Z",
+  "installerSha256": "8568d4ecd2bf7f84db53f67e16d7d6a3fbf0630722bcf0c79530cebdd4f2b6af"
 }
