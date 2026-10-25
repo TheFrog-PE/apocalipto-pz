@@ -2,11 +2,13 @@
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "ip": "147.185.221.215",
-    "port": 63854,
+    "port": 63855,
     "localPort": 16261,
     "protocol": "UDP",
     "provider": "Playit.gg",
-    "datacenter": "Santiago, Chile"
+    "datacenter": "Santiago, Chile",
+    "queryPort": 63854,
+    "raknetPort": 63855
   },
   "bridgeTunnel": {
     "url": "https://goto-antique-adjusted-falling.trycloudflare.com",
@@ -14,5 +16,5 @@
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-24T21:54:35.928Z"
+  "configuredAt": "2026-10-25T02:24:58.289Z"
 }
