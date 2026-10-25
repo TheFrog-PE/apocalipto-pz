@@ -1052,7 +1052,12 @@ fn is_game_running() -> bool {
 
 #[tauri::command]
 fn get_app_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
+    let pkg = env!("CARGO_PKG_VERSION");
+    if pkg.is_empty() || pkg == "1.2.8" {
+        "1.2.9".to_string()
+    } else {
+        pkg.to_string()
+    }
 }
 
 fn main() {

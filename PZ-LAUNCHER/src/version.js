@@ -30,7 +30,10 @@ export async function checkLauncherUpdate() {
   if (typeof window !== 'undefined' && window.__TAURI__ && window.__TAURI__.invoke) {
     try {
       const nativeVer = await window.__TAURI__.invoke('get_app_version');
-      if (nativeVer) activeVersion = nativeVer;
+      if (nativeVer) {
+        // Usar la versión más alta entre la nativa y la embebida en UI para evitar bucles falsos por caché
+        activeVersion = compareVersions(LAUNCHER_VERSION, nativeVer) >= 0 ? LAUNCHER_VERSION : nativeVer;
+      }
     } catch {}
   }
 

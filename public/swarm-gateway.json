@@ -9,11 +9,11 @@
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
   "latestVersion": "1.2.9",
-  "minRequiredVersion": "1.2.9",
+  "minRequiredVersion": "1.2.8",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "0F76B344DCA9E476B05804140611F81225211FDDF98906EB8E5134FF3C2B2DED",
-  "changelog": "Versión 1.2.9: Conexión automática ultra-robusta a Build 42 sin quedarse en menú principal. Aprobación instantánea con Bento OS y auto-lanzamiento al aprobar aspirantes.",
-  "updatedAt": "2026-10-25T21:26:00.000Z",
-  "installerSha256": "0F76B344DCA9E476B05804140611F81225211FDDF98906EB8E5134FF3C2B2DED"
+  "sha256": "8f99427e342bc328e4ddb52966cc669fa74b6b9f3ca2b15d6fcaac1bc6a1722c",
+  "changelog": "Versión 1.2.9: Conexión directa ultra-robusta a Build 42 sin quedarse en menú principal. Aprobación instantánea con Bento OS y auto-lanzamiento al aprobar aspirantes.",
+  "updatedAt": "2026-10-25T21:42:00.000Z",
+  "installerSha256": "8f99427e342bc328e4ddb52966cc669fa74b6b9f3ca2b15d6fcaac1bc6a1722c"
 }
