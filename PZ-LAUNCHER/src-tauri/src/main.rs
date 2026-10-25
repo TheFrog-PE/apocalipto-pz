@@ -982,6 +982,11 @@ fn is_game_running() -> bool {
     false
 }
 
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 fn clean_residual_injected_files() {
     #[cfg(target_os = "windows")]
     {
@@ -1014,7 +1019,7 @@ fn clean_residual_injected_files() {
 fn main() {
     clean_residual_injected_files();
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity, is_game_running])
+        .invoke_handler(tauri::generate_handler![launch_steam_game, apply_update, get_saved_characters, delete_saved_character, get_steam_user_identity, is_game_running, get_app_version])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

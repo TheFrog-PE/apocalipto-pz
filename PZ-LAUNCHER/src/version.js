@@ -26,6 +26,14 @@ export function compareVersions(a, b) {
  * Consulta en GitHub el registro del enjambre para verificar si hay una nueva versión requerida
  */
 export async function checkLauncherUpdate() {
+  let activeVersion = LAUNCHER_VERSION;
+  if (typeof window !== 'undefined' && window.__TAURI__ && window.__TAURI__.invoke) {
+    try {
+      const nativeVer = await window.__TAURI__.invoke('get_app_version');
+      if (nativeVer) activeVersion = nativeVer;
+    } catch {}
+  }
+
   const cacheBuster = Date.now();
   const urls = [
     `${BOOTSTRAP_REGISTRY_URL}?t=${cacheBuster}`,
@@ -42,11 +50,11 @@ export async function checkLauncherUpdate() {
       const latest = data.latestVersion || data.launcherVersion || '1.0.0';
       const minRequired = data.minRequiredVersion || latest;
       
-      const isOutdated = compareVersions(LAUNCHER_VERSION, latest) < 0;
-      const isRequired = compareVersions(LAUNCHER_VERSION, minRequired) < 0;
+      const isOutdated = compareVersions(activeVersion, latest) < 0;
+      const isRequired = compareVersions(activeVersion, minRequired) < 0;
 
       return {
-        currentVersion: LAUNCHER_VERSION,
+        currentVersion: activeVersion,
         latestVersion: latest,
         updateAvailable: isOutdated,
         updateRequired: isRequired,
