@@ -12,8 +12,8 @@
   "minRequiredVersion": "1.2.8",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "e92d80b424380dff98fdbc1559cb6117ad120d4044a2902992b631be0bbb811d",
-  "changelog": "Versión 1.2.9: Conexión directa ultra-robusta sin interferencias en ciclo de carga vanilla.",
-  "updatedAt": "2026-10-25T23:30:00.000Z",
-  "installerSha256": "e92d80b424380dff98fdbc1559cb6117ad120d4044a2902992b631be0bbb811d"
+  "sha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
+  "changelog": "Versión 1.2.9: Auto-sanitización vanilla garantizada tras conexión, compatibilidad total con servidores externos.",
+  "updatedAt": "2026-10-26T01:56:00.000Z",
+  "installerSha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f"
 }

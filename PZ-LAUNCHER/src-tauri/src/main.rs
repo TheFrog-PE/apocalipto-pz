@@ -149,15 +149,8 @@ fn run_full_vanilla_sanitization() {
             let lua_client = pz_dir.join("media").join("lua").join("client");
             let option_screens = lua_client.join("OptionScreens");
 
-            // 1. Limpiar o asegurar archivos efímeros inyectados en media/lua/client/
-            if is_host {
-                // En el nodo host anfitrión, el servidor dedicado corre desde esta misma carpeta.
-                // ApocaliptoConnectBridge.lua DEBE persistir para que los clientes remotos
-                // no sean rechazados con: "File doesn't exist on the server: media/lua/client/apocaliptoconnectbridge.lua"
-                let _ = fs::write(lua_client.join("ApocaliptoConnectBridge.lua"), build_bridge_lua_code());
-            } else {
-                let _ = fs::remove_file(lua_client.join("ApocaliptoConnectBridge.lua"));
-            }
+            // 1. Limpiar archivos efímeros inyectados en media/lua/client/
+            let _ = fs::remove_file(lua_client.join("ApocaliptoConnectBridge.lua"));
             let _ = fs::remove_file(lua_client.join("ApocaliptoFactionAutoSync.lua"));
 
             // 2. Limpiar tickets e inis en el directorio raíz del juego
@@ -724,6 +717,12 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                     .spawn();
 
                 if spawn_res.is_ok() {
+                    // Limpieza diferida: después de 35 segundos (cuando PZ ya cargó Lua en RAM),
+                    // restaurar todo el disco a 100% vanilla para que el juego quede libre de archivos de Apocalipto.
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(35));
+                        run_full_vanilla_sanitization();
+                    });
                     return Ok(format!("Project Zomboid iniciado con Sandbox Activo: {:?}", pz_exe));
                 }
             }
@@ -748,6 +747,10 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                     .spawn();
 
                 if res.is_ok() {
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(35));
+                        run_full_vanilla_sanitization();
+                    });
                     return Ok("Project Zomboid iniciado vía Steam -applaunch 108600".into());
                 }
             }
