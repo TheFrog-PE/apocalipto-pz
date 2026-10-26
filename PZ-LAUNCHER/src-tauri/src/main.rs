@@ -377,7 +377,7 @@ local function tryConnect()
             targetPort,
             "",
             false,
-            false,
+            true,
             1
         )
     end)
