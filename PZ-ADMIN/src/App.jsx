@@ -103,6 +103,25 @@ export default function App() {
   const [showWorldConfigModal, setShowWorldConfigModal] = useState(false);
   const [inspectingFactionId, setInspectingFactionId] = useState(null);
   const [approvedNodes, setApprovedNodes] = useState({});
+
+  // Cargar reglas guardadas en el Swarm Bridge al iniciar
+  useEffect(() => {
+    async function loadServerRules() {
+      try {
+        const res = await fetch('http://localhost:19842/api/rules');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.protocols && Array.isArray(data.protocols) && data.protocols.length > 0) {
+            setProtocols(data.protocols);
+            if (data.roleDisclaimer) setRoleDisclaimer(data.roleDisclaimer);
+            localStorage.setItem('apocalipto_pz_rules', JSON.stringify(data.protocols));
+            if (data.roleDisclaimer) localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(data.roleDisclaimer));
+          }
+        }
+      } catch {}
+    }
+    loadServerRules();
+  }, []);
   const [liveOnlineCount, setLiveOnlineCount] = useState(0);
   const [liveOnlinePlayers, setLiveOnlinePlayers] = useState([]);
   const [worldStatus, setWorldStatus] = useState('CHECKING'); // 'ONLINE' | 'STARTING' | 'OFFLINE' | 'CHECKING'
@@ -180,7 +199,7 @@ export default function App() {
   };
 
   // Función para guardar y publicar reglas en tiempo real al Launcher
-  const handleSaveAndPublishRules = (newProtocols, newDisclaimer) => {
+  const handleSaveAndPublishRules = async (newProtocols, newDisclaimer) => {
     const protosToSave = newProtocols || protocols;
     const disclaimerToSave = newDisclaimer || roleDisclaimer;
 
@@ -190,6 +209,20 @@ export default function App() {
     try {
       localStorage.setItem('apocalipto_pz_rules', JSON.stringify(protosToSave));
       localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(disclaimerToSave));
+
+      // Guardar en el Swarm Bridge del Enjambre (Servidor Central en disco)
+      try {
+        await fetch('http://localhost:19842/api/admin/rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            protocols: protosToSave,
+            roleDisclaimer: disclaimerToSave
+          })
+        });
+      } catch (e) {
+        console.warn('Notice: Error conectando con Swarm Bridge para reglas:', e);
+      }
 
       // Transmisión en tiempo real al Launcher
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {

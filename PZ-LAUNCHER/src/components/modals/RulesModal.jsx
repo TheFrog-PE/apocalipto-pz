@@ -22,8 +22,38 @@ export default function RulesModal({ isOpen, onClose }) {
     }
   });
 
-  // Escuchar sincronización en tiempo real desde el panel Admin
+  // Sincronización en vivo con el Servidor Central / Swarm Bridge
   useEffect(() => {
+    async function syncRules() {
+      try {
+        const res = await fetch('http://localhost:19842/api/rules');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.protocols && Array.isArray(data.protocols) && data.protocols.length > 0) {
+            setProtocols(data.protocols);
+            if (data.roleDisclaimer) setRoleDisclaimer(data.roleDisclaimer);
+            localStorage.setItem('apocalipto_pz_rules', JSON.stringify(data.protocols));
+            if (data.roleDisclaimer) localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(data.roleDisclaimer));
+            return;
+          }
+        }
+      } catch {}
+
+      // Fallback remoto para jugadores externos
+      try {
+        const remoteRes = await fetch('https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/rules.json');
+        if (remoteRes.ok) {
+          const rData = await remoteRes.json();
+          if (rData && rData.protocols && Array.isArray(rData.protocols)) {
+            setProtocols(rData.protocols);
+            if (rData.roleDisclaimer) setRoleDisclaimer(rData.roleDisclaimer);
+          }
+        }
+      } catch {}
+    }
+
+    syncRules();
+
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       const channel = new BroadcastChannel('apocalipto_pz_rules_channel');
       channel.onmessage = (event) => {
@@ -34,7 +64,7 @@ export default function RulesModal({ isOpen, onClose }) {
       };
       return () => channel.close();
     }
-  }, []);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -34,6 +34,7 @@ export class SwarmBridgeServer {
     this.applicantsFile = path.join(storageDir, 'applicants.json');
     this.approvedNodesFile = path.join(storageDir, 'approved_nodes.json');
     this.rejectedNodesFile = path.join(storageDir, 'rejected_nodes.json');
+    this.rulesFile = path.join(storageDir, 'rules.json');
 
     // Estado del Motor de Failover y Heartbeat del Enjambre P2P
     this.failoverState = {
@@ -72,6 +73,55 @@ export class SwarmBridgeServer {
     }
     if (!fs.existsSync(this.rejectedNodesFile)) {
       this._atomicWrite(this.rejectedNodesFile, {});
+    }
+    if (!fs.existsSync(this.rulesFile)) {
+      const defaultRules = {
+        protocols: [
+          {
+            id: 'alpha',
+            number: '01',
+            title: 'PROTOCOLO ALFA',
+            category: 'CONDUCTA',
+            titleColor: 'text-zinc-100',
+            description: 'Tolerancia cero para el uso de programas de terceros, exploits de duplicación o manipulación del juego. La infracción resulta en un PERMABAN DIRECTO sin posibilidad de apelación. Mantén el rol en todo momento.',
+            highlight: 'PERMABAN DIRECTO',
+            clause: 'Tolerancia cero para el uso de programas de terceros, exploits de duplicación o manipulación del juego. La infracción resulta en un PERMABAN DIRECTO sin posibilidad de apelación. Mantén el rol en todo momento.'
+          },
+          {
+            id: 'beta',
+            number: '02',
+            title: 'PROTOCOLO BETA',
+            category: 'ZONIFICACIÓN',
+            titleColor: 'text-amber-500',
+            description: 'Cualquier edificio del mapa puede ser reclamado como refugio legítimo. Los asaltos, incursiones o ataques a refugios solo están permitidos exclusivamente desde el Viernes a las 18:00 hasta el Domingo a las 23:59 (Hora del Enjambre).',
+            clause: 'Cualquier edificio del mapa puede ser reclamado como refugio legítimo. Los asaltos, incursiones o ataques a refugios solo están permitidos exclusivamente desde el Viernes a las 18:00 hasta el Domingo a las 23:59 (Hora del Enjambre).'
+          },
+          {
+            id: 'gamma',
+            number: '03',
+            title: 'PROTOCOLO GAMMA',
+            category: 'COMUNICACIONES',
+            titleColor: 'text-cyan-400',
+            description: 'El uso de canales externos, mapas y grupos de WhatsApp está permitido como apoyo logístico táctico, pero no deben reemplazar por completo la interacción u ambientación dentro del Enjambre.',
+            clause: 'El uso de canales externos, mapas y grupos de WhatsApp está permitido como apoyo logístico táctico, pero no deben reemplazar por completo la interacción u ambientación dentro del Enjambre.'
+          },
+          {
+            id: 'omega',
+            number: '04',
+            title: 'PROTOCOLO OMEGA',
+            category: 'LA PURGA',
+            titleColor: 'text-amber-400',
+            description: 'El último fin de semana de cada mes (In-game), todos los protocolos y zonas seguras quedan anulados. Sin leyes, sin refugios y con muerte permanente (Permadeath) activada, sobrevivir por cualquier medio es la única ley.',
+            clause: 'El último fin de semana de cada mes (In-game), todos los protocolos y zonas seguras quedan anulados. Sin leyes, sin refugios y con muerte permanente (Permadeath) activada, sobrevivir por cualquier medio es la única ley.'
+          }
+        ],
+        roleDisclaimer: {
+          title: 'SOBRE EL ROL',
+          text: 'Los jugadores tienen total libertad para hacer alianzas, gankear, traicionar o firmar tratados. Sin embargo, hacer metagaming o trasladar conflictos del juego al entorno IRL (en la vida real) está completamente prohibido. Lo que pasa en el Enjambre, se queda en el Enjambre. Cualquier conducta de toxicidad, acoso o intimidación resultará en un permaban inmediato.'
+        },
+        updatedAt: Date.now()
+      };
+      this._atomicWrite(this.rulesFile, defaultRules);
     }
   }
 
@@ -208,6 +258,7 @@ export class SwarmBridgeServer {
       '/api/admin/rcon',
       '/api/admin/gateway-info',
       '/api/admin/gateway-config',
+      '/api/admin/rules',
       '/api/admin/stats',
       '/api/admin/world/status',
       '/api/admin/world/start',
@@ -362,6 +413,60 @@ export class SwarmBridgeServer {
           blockHash: this.failoverState.blockHash,
           historyCount: this.failoverState.history.length
         }));
+      }
+
+      // 2e. PROTOCOLOS Y REGLAS OFICIALES DEL SERVIDOR (Público y Admin)
+      if (req.method === 'GET' && (url.pathname === '/api/rules' || url.pathname === '/api/admin/rules')) {
+        const rules = this._readJson(this.rulesFile, null);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(rules || {}));
+      }
+
+      // 2f. GUARDAR Y PUBLICAR REGLAS (Solo Admin en Loopback)
+      if (req.method === 'POST' && url.pathname === '/api/admin/rules') {
+        this._parseBody(req, res, (body) => {
+          const { protocols, roleDisclaimer } = body;
+          if (!protocols || !Array.isArray(protocols)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'MISSING_PROTOCOLS' }));
+          }
+
+          const rulesData = {
+            protocols,
+            roleDisclaimer: roleDisclaimer || {
+              title: 'SOBRE EL ROL',
+              text: 'Los jugadores tienen total libertad para hacer alianzas, gankear, traicionar o firmar tratados.'
+            },
+            updatedAt: Date.now()
+          };
+
+          this._atomicWrite(this.rulesFile, rulesData);
+
+          // Sincronizar copia en public/rules.json para CDN / jugadores remotos
+          try {
+            const publicDir = path.resolve(this.storageDir, '..', '..', 'public');
+            if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+            fs.writeFileSync(path.join(publicDir, 'rules.json'), JSON.stringify(rulesData, null, 2), 'utf8');
+          } catch (e) {
+            console.warn('[RULES] Notice: No se pudo escribir public/rules.json:', e.message);
+          }
+
+          // Sincronizar archivo fuente de fallback en el Launcher
+          try {
+            const launcherRulesPath = path.resolve(this.storageDir, '..', '..', 'PZ-LAUNCHER', 'src', 'data', 'rulesData.js');
+            if (fs.existsSync(launcherRulesPath)) {
+              const fileContent = `export const SERVER_PROTOCOLS = ${JSON.stringify(protocols, null, 2)};\n\nexport const ROLE_DISCLAIMER = ${JSON.stringify(rulesData.roleDisclaimer, null, 2)};\n`;
+              fs.writeFileSync(launcherRulesPath, fileContent, 'utf8');
+            }
+          } catch (e) {
+            console.warn('[RULES] Notice: No se pudo escribir rulesData.js:', e.message);
+          }
+
+          console.log(`[RULES] Sincronización exitosa: ${protocols.length} protocolos actualizados en disco.`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, updatedAt: rulesData.updatedAt }));
+        });
+        return;
       }
 
       // 2b. INFORMACIÓN DE ENLACE EXTERNO & GATEWAY (Para conectar jugadores de otras PCs)
