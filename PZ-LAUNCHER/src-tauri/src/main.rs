@@ -393,6 +393,39 @@ local function readTicket()
         end)
     end
 
+    -- Si el ticket ya fue marcado como consumido, ignorar
+    if ticket and ticket.consumed == "1" then
+        return nil
+    end
+
+    if not ticket or not ticket.user or not ticket.ip then
+        -- Solo buscar en ServerList si NO estamos ya conectados
+        if not (isClient and isClient()) then
+            pcall(function()
+                if getServerList then
+                    local servers = getServerList()
+                    if servers then
+                        for _, s in ipairs(servers) do
+                            local sName = tostring(s:getName() or "")
+                            if string.find(sName, "Apocalipto") or string.find(sName, "apocalipto") then
+                                ticket = {
+                                    user = s:getUserName(),
+                                    password = s:getPassword() or "12345",
+                                    ip = s:getIp(),
+                                    port = tostring(s:getPort()),
+                                    serverName = s:getName(),
+                                    faction = "MOK"
+                                }
+                                safeLog("Ticket rescatado desde ServerList: " .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+
     if ticket and ticket.user and ticket.ip then
         safeLog("Ticket verificado: usuario=" .. tostring(ticket.user) .. " -> " .. tostring(ticket.ip) .. ":" .. tostring(ticket.port))
         ticketLoaded = ticket
@@ -400,13 +433,42 @@ local function readTicket()
     return ticket
 end
 
--- Intento de conexión
+-- Intento de conexión con protección anti-duplicados tras ResetLua
 local function tryConnect()
     if bridgeRan then return true end
+
+    -- 1. Si ya estamos conectados al servidor o en partida, no reconectar
+    if isClient and isClient() then
+        bridgeRan = true
+        pcall(function()
+            if ConnectToServer and ConnectToServer.instance then
+                ConnectToServer.instance:setVisible(false)
+            end
+            if MainScreen and MainScreen.instance and MainScreen.instance.connectToServer then
+                MainScreen.instance.connectToServer:setVisible(false)
+            end
+        end)
+        return true
+    end
 
     local mainScreen = MainScreen and MainScreen.instance
     if not mainScreen or not mainScreen.bottomPanel then
         return false
+    end
+
+    -- 2. Si las pantallas de creación de personaje ya están activas, ocultar popup de conexión y salir
+    if (mainScreen.charCreationProfession and mainScreen.charCreationProfession:getIsVisible()) or
+       (mainScreen.charCreationMain and mainScreen.charCreationMain:getIsVisible()) then
+        bridgeRan = true
+        pcall(function()
+            if ConnectToServer and ConnectToServer.instance then
+                ConnectToServer.instance:setVisible(false)
+            end
+            if mainScreen.connectToServer then
+                mainScreen.connectToServer:setVisible(false)
+            end
+        end)
+        return true
     end
 
     local connectUI = (ConnectToServer and ConnectToServer.instance) or mainScreen.connectToServer
@@ -437,6 +499,20 @@ local function tryConnect()
 
     bridgeRan = true
 
+    -- Consumir ticket en disco para evitar reconexión accidental en ResetLua
+    pcall(function()
+        local fw = getFileWriter("apocalipto_launch_ticket.ini", false, false)
+        if fw then
+            fw:write("consumed=1\n")
+            fw:close()
+        end
+        local fw2 = getFileWriter("Lua/apocalipto_launch_ticket.ini", false, false)
+        if fw2 then
+            fw2:write("consumed=1\n")
+            fw2:close()
+        end
+    end)
+
     pcall(function()
         connectUI:connect(
             mainScreen.bottomPanel or mainScreen,
@@ -456,6 +532,30 @@ local function tryConnect()
     return true
 end
 
+-- Limpieza de UI superpuesta cuando la creación de personaje se muestra
+local function checkHideConnectUI()
+    pcall(function()
+        local ms = MainScreen and MainScreen.instance
+        if not ms then return end
+
+        local charProf = ms.charCreationProfession
+        local charMain = ms.charCreationMain
+        local isCharScreen = (charProf and charProf:getIsVisible()) or (charMain and charMain:getIsVisible())
+
+        if isCharScreen or (isClient and isClient()) then
+            if ms.connectToServer and ms.connectToServer:getIsVisible() then
+                ms.connectToServer:setVisible(false)
+            end
+            if ms.serverConnectPopup and ms.serverConnectPopup:getIsVisible() then
+                ms.serverConnectPopup:setVisible(false)
+            end
+            if ConnectToServer and ConnectToServer.instance and ConnectToServer.instance:getIsVisible() then
+                ConnectToServer.instance:setVisible(false)
+            end
+        end
+    end)
+end
+
 -- Hook dinámico a MainScreen
 local function setupHooks()
     pcall(function()
@@ -468,6 +568,7 @@ local function setupHooks()
             MainScreen.prerender = function(self, ...)
                 local res
                 if old_prerender then res = old_prerender(self, ...) end
+                checkHideConnectUI()
                 if not bridgeRan then
                     pcall(tryConnect)
                 end
@@ -478,6 +579,7 @@ local function setupHooks()
             MainScreen.render = function(self, ...)
                 local res
                 if old_render then res = old_render(self, ...) end
+                checkHideConnectUI()
                 if not bridgeRan then
                     pcall(tryConnect)
                 end
@@ -488,6 +590,7 @@ local function setupHooks()
             MainScreen.OnTick = function(...)
                 local res
                 if old_OnTick then res = old_OnTick(...) end
+                checkHideConnectUI()
                 if not bridgeRan then
                     pcall(tryConnect)
                 end
@@ -506,13 +609,22 @@ pcall(function()
         Events.OnMainMenuEnter.Add(function()
             safeLog("OnMainMenuEnter disparado.")
             setupHooks()
+            checkHideConnectUI()
             tryConnect()
         end)
     end
     if Events.OnResolutionChange then
         Events.OnResolutionChange.Add(function()
             setupHooks()
+            checkHideConnectUI()
             tryConnect()
+        end)
+    end
+    if Events.OnConnected then
+        Events.OnConnected.Add(function()
+            safeLog("OnConnected disparado: ocultando paneles de conexion.")
+            bridgeRan = true
+            checkHideConnectUI()
         end)
     end
 end)
