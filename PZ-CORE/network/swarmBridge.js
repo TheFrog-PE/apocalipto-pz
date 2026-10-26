@@ -243,6 +243,9 @@ export class SwarmBridgeServer {
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5176',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'http://127.0.0.1:5176',
       `http://${this._getLocalLanIp()}:5173`,
       `http://${this._getLocalLanIp()}:5174`,
       `http://${this._getLocalLanIp()}:5176`,
@@ -327,7 +330,7 @@ export class SwarmBridgeServer {
 
       // ── CORS SEGURO: Permitir peticiones legítimas de Launchers (Tauri / Web) ──
       const isPublicRoute = !ADMIN_ONLY_ROUTES.has(url.pathname);
-      const isAllowedOrigin = ALLOWED_ORIGINS.has(origin) || origin.includes('localhost') || origin.includes('tauri.localhost') || origin === '';
+      const isAllowedOrigin = ALLOWED_ORIGINS.has(origin) || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('tauri.localhost') || origin === '';
       const corsOrigin = isPublicRoute ? (origin || '*') : (isAllowedOrigin ? origin : 'null');
 
       res.setHeader('Access-Control-Allow-Origin', corsOrigin);

@@ -16,16 +16,29 @@ export default function RulesModal({
   const [localDisclaimer, setLocalDisclaimer] = useState(roleDisclaimer || INITIAL_ROLE_DISCLAIMER);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      if (protocols && protocols.length > 0) {
+        setLocalProtocols(protocols);
+      }
+      if (roleDisclaimer) {
+        setLocalDisclaimer(roleDisclaimer);
+      }
+    }
+  }, [isOpen, protocols, roleDisclaimer]);
+
   if (!isOpen) return null;
 
   const handleProtocolChange = (id, field, value) => {
     setLocalProtocols(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setProtocols?.(localProtocols);
     setRoleDisclaimer?.(localDisclaimer);
-    onSaveAndPublish?.(localProtocols, localDisclaimer);
+    if (onSaveAndPublish) {
+      await onSaveAndPublish(localProtocols, localDisclaimer);
+    }
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
