@@ -347,7 +347,7 @@ export default function FactionsTab({
 
             <span className="text-[9px] text-zinc-400 font-mono tracking-tight">
               {perfMode
-                ? '⚡ Sangre OFF • Items en suelo 2D • Niebla fluida (Máximo FPS)'
+                ? 'Sangre OFF • Items en suelo 2D • Niebla fluida (Máximo FPS)'
                 : 'Estándar PZ • Objetos 3D y sangre original'}
             </span>
           </div>
@@ -548,9 +548,9 @@ export default function FactionsTab({
                   ) : isNextAvailableSlot ? (
                     <>
                       <div className="flex items-center gap-1.5 text-amber-300 group-hover:scale-105 transition-all">
-                        <UserPlus className="w-3.5 h-3.5 text-amber-400" />
+                        <User className="w-3.5 h-3.5 text-amber-400" />
                         <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                          + CREAR EN ESTE SLOT
+                          CREAR EN ESTE SLOT
                         </span>
                       </div>
                       <span className="text-[9px] font-mono text-zinc-400 mt-0.5">
