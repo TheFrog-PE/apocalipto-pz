@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://defense-integer-manufacturer-outlined.trycloudflare.com",
+  "gatewayUrl": "https://leadership-diffs-documentary-adjustable.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -14,11 +14,138 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
   "changelog": "Versión 1.2.9: Auto-sanitización vanilla garantizada tras conexión, compatibilidad total con servidores externos.",
-  "updatedAt": "2026-10-26T15:01:32.888Z",
+  "updatedAt": "2026-10-27T13:29:24.334Z",
   "installerSha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
   "launcherVersion": "1.3.1",
   "launcherSha256": "E4D8D12AF65402617A4EEF4AB12B77CDEBD9313C355DF1E6FD7E3B27F240E1E8",
-  "latest_launcher_version": "1.3.2",
-  "launcher_sha256": "ede76a3b78ce5d36ae42e0795db17bb4ddf0fbbe47c1834ba86fc5c327267463",
-  "launcher_download_size": 60821790
+  "latest_launcher_version": "1.3.3",
+  "launcher_sha256": "6abfeb1a499e62792489f56a981fec4eee5c310fdfe74224c062c5ece309ddf0",
+  "launcher_download_size": 60820937,
+  "rules": {
+    "protocols": [
+      {
+        "id": "alpha",
+        "number": "01",
+        "title": "PROTOCOLO ALFA MODIFICADO",
+        "clause": "Regla de prueba"
+      }
+    ],
+    "roleDisclaimer": {
+      "title": "SOBRE EL ROL",
+      "text": "Texto de prueba"
+    },
+    "updatedAt": 1793059860053
+  },
+  "news": {
+    "lore": {
+      "id": "lore",
+      "tag": "LORE",
+      "tagColor": "border-emerald-500/80 text-emerald-400 bg-emerald-950/30",
+      "headerTag": "[ LORE DEL SERVER ]",
+      "headerDate": "EL FIN DEL MUNDO SONABA MEJOR",
+      "date": "OCTUBRE, 1993",
+      "title": "UN NUEVO ORDEN SE FORMÓ LUEGO DEL FIN DEL MUNDO",
+      "caption": "FOTOGRAMA OFICIAL • ARCHIVO DE TRANSMISIÓN #01",
+      "snippet": "Día 14 del Incidente de Knox. El olor a ozono quemado y carne en descomposición se ha convertido en el aire que respiramos.",
+      "paragraphs": [
+        "Día 14 del Incidente de Knox. El olor a ozono quemado y carne en descomposición se ha convertido en el aire que respiramos. Las transmisiones de emergencia de Louisville cesaron hace 72 horas. Solo queda estática en las frecuencias altas.",
+        "La civilización tal como la conocíamos se fracturó en cuatro frentes de poder nacidos de la necesidad extrema. La DOE (División de Operaciones Especiales) mantiene su bastión a sangre y fuego bajo una férrea ley marcial. Los MOK dominan el asfalto y el páramo con vehículos blindados de chatarra, viviendo para el saqueo. Los KTO operan desde las sombras como un culto macabro que venera la infección. Y la RIV resiste en el valle, unida por pactos de sangre para defender su territorio a cualquier costo. Aquí no hay leyes, solo supervivencia."
+      ]
+    },
+    "news": [
+      {
+        "id": 1,
+        "tag": "URGENT",
+        "tagColor": "border-red-500/80 text-red-400 bg-red-950/30",
+        "date": "OCT 24, 1993",
+        "headerTag": "[ URGENT // COMUNICADO #04 ]",
+        "headerDate": "24 DE OCTUBRE, 1993",
+        "title": "REINICIO DE CICLO DEL ENJAMBRE P2P",
+        "caption": "FOTOGRAMA OFICIAL • PROTOCOLO DE REINICIO SAVE-CHAIN",
+        "snippet": "Debido a actualización de época en la Save-Chain de Knox, iniciaremos un protocolo de nuevo ciclo para la Build 42.",
+        "paragraphs": [
+          "Debido a la actualización de época en la Save-Chain de Knox y el despliegue del nuevo protocolo de sincronización descentralizado para la Build 42, el Centro de Mando Central iniciará un protocolo de nuevo ciclo general.",
+          "Todos los refugios reclamados, almacenes de recursos y registros biométricos del Enjambre serán sincronizados bajo el estándar criptográfico DPoH. Aseguren sus alianzas, organicen sus cuadrillas y prepárense para la nueva era de hostilidad en el condado.",
+          "Los líderes de facción deberán reconfirmar sus puestos de mando antes del cierre de la ventana de mantenimiento preventivo."
+        ],
+        "fullText": "Debido a actualización de época en la Save-Chain de Knox, iniciaremos un protocolo de nuevo ciclo el próximo domingo a las 00:00 UTC. Todos los refugios y registros del Enjambre serán sincronizados. Aseguren sus alianzas y prepárense para el nuevo ciclo.",
+        "hasReadMore": true
+      },
+      {
+        "id": 2,
+        "tag": "SYSTEM",
+        "tagColor": "border-blue-500/80 text-blue-400 bg-blue-950/30",
+        "date": "OCT 21, 1993",
+        "headerTag": "[ SYSTEM // DESPLIEGUE TÁCTICO ]",
+        "headerDate": "21 DE OCTUBRE, 1993",
+        "title": "ACTUALIZACIÓN DEL LAUNCHER v1.0.4",
+        "caption": "FOTOGRAMA OFICIAL • ACTUALIZACIÓN DEL CLIENTE #03",
+        "snippet": "Se ha implementado el nuevo módulo de seguimiento de estadísticas vitales. Ahora pueden monitorizar el estado de la facción en vivo.",
+        "paragraphs": [
+          "Se ha implementado el nuevo módulo de seguimiento de estadísticas vitales y telemetría de red. Ahora todos los supervivientes pueden monitorizar el cupo de miembros en vivo desde su interfaz táctica.",
+          "La actualización incluye alertas tempranas de asaltos a bases, verificación de latencia en tiempo real y optimización del motor de saneamiento vanilla que garantiza cero conflictos al alternar con otros servidores de Steam.",
+          "Se recomienda a todos los miembros mantener sus nodos actualizados para evitar desincronizaciones de inventario."
+        ],
+        "fullText": "Se ha implementado el nuevo módulo de seguimiento de estadísticas vitales. Ahora pueden monitorizar el cupo de miembros en vivo, recibir notificaciones de asaltos y verificar el ping de conexión en tiempo real.",
+        "hasReadMore": false
+      },
+      {
+        "id": 3,
+        "tag": "INTEL",
+        "tagColor": "border-amber-500/80 text-amber-400 bg-amber-950/30",
+        "date": "OCT 18, 1993",
+        "headerTag": "[ INTEL // RECONOCIMIENTO ]",
+        "headerDate": "18 DE OCTUBRE, 1993",
+        "title": "ACTIVIDAD ANÓMALA EN RIVERSIDE",
+        "caption": "FOTOGRAMA OFICIAL • REPORTE DE PATRULLA DE AVANZADA",
+        "snippet": "Reportes de los equipos de reconocimiento indican movimientos migratorios masivos de infectados hacia el sector este.",
+        "paragraphs": [
+          "Reportes de las patrullas de avanzada de la DOE y exploradores de Riverside confirman desplazamientos atípicos de hordas enteras cruzando los límites boscosos del sector este hacia las zonas residenciales.",
+          "Se ha detectado una presencia anormal de infectados con reflejos acelerados y resistencia incrementada. Se aconseja a los civiles y mercenarios evitar transitar por la autopista secundaria en horas de la noche sin escolta pesada.",
+          "Los puestos de control en los puentes han elevado su nivel de alerta a Nivel Naranja."
+        ],
+        "fullText": "Reportes de los equipos de reconocimiento de la DOE indican movimientos migratorios masivos de hordas hacia las rutas de escape de Riverside. Se recomienda a los civiles no transitar por la autopista secundaria.",
+        "hasReadMore": false
+      }
+    ],
+    "archivedNews": [
+      {
+        "id": 4,
+        "tag": "URGENT",
+        "tagColor": "border-red-500/80 text-red-400 bg-red-950/30",
+        "date": "OCT 12, 1993",
+        "headerTag": "[ URGENT // COLAPSO DE RED ]",
+        "headerDate": "12 DE OCTUBRE, 1993",
+        "title": "CORTE DE ENERGÍA ELÉCTRICA EN EL CONDADO",
+        "caption": "FOTOGRAMA OFICIAL • ARCHIVO DE TRANSMISIÓN #05",
+        "snippet": "Las estaciones eléctricas de Muldraugh han cesado operaciones. El uso de generadores a combustible pasa a ser obligatorio.",
+        "paragraphs": [
+          "Las principales subestaciones eléctricas del condado de Knox han dejado de suministrar energía tras el abandono definitivo del personal de mantenimiento. La oscuridad total cubre ahora todos los núcleos urbanos.",
+          "El uso de generadores a gasolina y baterías recargables pasa a ser estrictamente necesario para la conservación de alimentos y el funcionamiento de bombas de agua en los refugios fortificados.",
+          "Recuerden que el ruido de los generadores atrae hordas a varios cientos de metros a la redonda."
+        ],
+        "fullText": "La red eléctrica principal ha colapsado de forma irreversible. Mantengan sus reservas de combustible y generadores bien resguardados contra incursiones enemigas.",
+        "hasReadMore": true
+      },
+      {
+        "id": 5,
+        "tag": "INTEL",
+        "tagColor": "border-amber-500/80 text-amber-400 bg-amber-950/30",
+        "date": "OCT 05, 1993",
+        "headerTag": "[ INTEL // LOGÍSTICA ]",
+        "headerDate": "05 DE OCTUBRE, 1993",
+        "title": "SUMINISTROS AÉREOS INTERCEPTADOS",
+        "caption": "FOTOGRAMA OFICIAL • ARCHIVO DE TRANSMISIÓN #06",
+        "snippet": "Un cargamento médico militar cayó en las inmediaciones del bosque de West Point. Facciones en alerta máxima.",
+        "paragraphs": [
+          "Un avión de transporte militar no identificado arrojó múltiples contenedores de asistencia médica antes de precipitarse fuera de la zona de exclusión. Uno de los cajones cayó en el cuadrante norte de West Point.",
+          "Cajas con antibióticos, kits quirúrgicos y bolsas de sangre selladas han sido avistadas. MOK y DOE ya han movilizado convoyes armados para asegurar el perímetro de caída.",
+          "Cualquier superviviente no afiliado que se acerque a la zona de impacto será considerado hostil."
+        ],
+        "fullText": "Cajas con antibióticos y kits quirúrgicos han sido detectadas. MOK y DOE ya han movilizado patrullas al sector de caída.",
+        "hasReadMore": false
+      }
+    ],
+    "updatedAt": 1793054049796
+  }
 }
