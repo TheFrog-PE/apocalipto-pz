@@ -211,17 +211,25 @@ export default function App() {
       localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(disclaimerToSave));
 
       // Guardar en el Swarm Bridge del Enjambre (Servidor Central en disco)
-      try {
-        await fetch('http://localhost:19842/api/admin/rules', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            protocols: protosToSave,
-            roleDisclaimer: disclaimerToSave
-          })
-        });
-      } catch (e) {
-        console.warn('Notice: Error conectando con Swarm Bridge para reglas:', e);
+      let published = false;
+      for (const endpoint of ['http://127.0.0.1:19842/api/admin/rules', 'http://localhost:19842/api/admin/rules']) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              protocols: protosToSave,
+              roleDisclaimer: disclaimerToSave
+            })
+          });
+          if (res.ok) {
+            published = true;
+            console.log('[RULES] Reglas publicadas exitosamente vía', endpoint);
+            break;
+          }
+        } catch (e) {
+          console.warn('Notice: Error en endpoint de reglas:', endpoint, e);
+        }
       }
 
       // Transmisión en tiempo real al Launcher

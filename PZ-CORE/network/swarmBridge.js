@@ -35,6 +35,7 @@ export class SwarmBridgeServer {
     this.approvedNodesFile = path.join(storageDir, 'approved_nodes.json');
     this.rejectedNodesFile = path.join(storageDir, 'rejected_nodes.json');
     this.rulesFile = path.join(storageDir, 'rules.json');
+    this.newsFile = path.join(storageDir, 'news.json');
 
     // Estado del Motor de Failover y Heartbeat del Enjambre P2P
     this.failoverState = {
@@ -140,6 +141,35 @@ export class SwarmBridgeServer {
       return JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } catch {
       return fallback;
+    }
+  }
+
+  _syncToPublicGateway(rulesData, newsData) {
+    try {
+      const publicDir = path.resolve(this.storageDir, '..', '..', 'public');
+      const gwPath = path.join(publicDir, 'swarm-gateway.json');
+      const launcherGwPath = path.resolve(this.storageDir, '..', '..', 'PZ-LAUNCHER', 'public', 'swarm-gateway.json');
+
+      if (fs.existsSync(gwPath)) {
+        const gw = JSON.parse(fs.readFileSync(gwPath, 'utf8'));
+        if (rulesData) gw.rules = rulesData;
+        if (newsData) gw.news = newsData;
+        gw.updatedAt = new Date().toISOString();
+        const str = JSON.stringify(gw, null, 2);
+        fs.writeFileSync(gwPath, str, 'utf8');
+        if (fs.existsSync(launcherGwPath)) fs.writeFileSync(launcherGwPath, str, 'utf8');
+      }
+
+      // Sincronización en segundo plano con GitHub CDN
+      const projectRoot = path.resolve(this.storageDir, '..', '..');
+      const { exec } = require('child_process');
+      const filesToAdd = ['public/rules.json', 'public/news.json', 'public/swarm-gateway.json', 'PZ-LAUNCHER/public/swarm-gateway.json'].join(' ');
+      exec(`git add ${filesToAdd} && git commit -m "sync(live): publish live updates from Bento OS" && git push origin main`, { cwd: projectRoot }, (err) => {
+        if (!err) console.log('[LIVE SYNC] Cambios publicados a GitHub CDN exitosamente.');
+        else console.warn('[LIVE SYNC] Notice git push:', err.message);
+      });
+    } catch (e) {
+      console.warn('[LIVE SYNC] Notice:', e.message);
     }
   }
 
@@ -262,6 +292,7 @@ export class SwarmBridgeServer {
       '/api/admin/gateway-info',
       '/api/admin/gateway-config',
       '/api/admin/rules',
+      '/api/admin/news',
       '/api/admin/stats',
       '/api/admin/world/status',
       '/api/admin/world/start',
@@ -465,9 +496,49 @@ export class SwarmBridgeServer {
             console.warn('[RULES] Notice: No se pudo escribir rulesData.js:', e.message);
           }
 
+          // Sincronizar gateway y auto-push a GitHub CDN en segundo plano
+          this._syncToPublicGateway(rulesData, null);
+
           console.log(`[RULES] Sincronización exitosa: ${protocols.length} protocolos actualizados en disco.`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, updatedAt: rulesData.updatedAt }));
+        });
+        return;
+      }
+
+      // 2g. NOTICIAS Y PUBLICACIONES (Público)
+      if (req.method === 'GET' && (url.pathname === '/api/news' || url.pathname === '/api/admin/news')) {
+        const news = this._readJson(this.newsFile, null);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(news || {}));
+      }
+
+      // 2h. GUARDAR Y PUBLICAR NOTICIAS / BLOGS (Admin)
+      if (req.method === 'POST' && url.pathname === '/api/admin/news') {
+        this._parseBody(req, res, (body) => {
+          const { news, lore, archivedNews } = body;
+          const newsData = {
+            news: news || [],
+            lore: lore || null,
+            archivedNews: archivedNews || [],
+            updatedAt: Date.now()
+          };
+
+          this._atomicWrite(this.newsFile, newsData);
+
+          try {
+            const publicDir = path.resolve(this.storageDir, '..', '..', 'public');
+            if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+            fs.writeFileSync(path.join(publicDir, 'news.json'), JSON.stringify(newsData, null, 2), 'utf8');
+          } catch (e) {
+            console.warn('[NEWS] Notice: No se pudo escribir public/news.json:', e.message);
+          }
+
+          this._syncToPublicGateway(null, newsData);
+
+          console.log(`[NEWS] Publicaciones sincronizadas: ${newsData.news.length} noticias activas.`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, updatedAt: newsData.updatedAt }));
         });
         return;
       }

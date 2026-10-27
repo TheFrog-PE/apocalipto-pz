@@ -3,12 +3,43 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Megaphone, ChevronRight, BookOpen, Check } from 'lucide-react';
 import blogImg from '../../assets/publicaciones-blog-pz.webp';
 import { INITIAL_NEWS, ARCHIVED_NEWS, LORE_ARTICLE } from '../../data/newsData';
+import { getSwarmBridgeUrl } from '../../services/swarmClient';
 
 export default function NewsTab({ onShowToast }) {
   const [newsList, setNewsList] = useState(INITIAL_NEWS);
   const [selectedTag, setSelectedTag] = useState('ALL');
   const [activeArticle, setActiveArticle] = useState(LORE_ARTICLE);
   const [loadedArchived, setLoadedArchived] = useState(false);
+
+  React.useEffect(() => {
+    async function syncLiveNews() {
+      const now = Date.now();
+      const bridgeUrl = typeof getSwarmBridgeUrl === 'function' ? getSwarmBridgeUrl() : 'http://127.0.0.1:19842';
+      const endpoints = [
+        bridgeUrl + '/api/news?_=' + now,
+        'http://127.0.0.1:19842/api/news?_=' + now,
+        'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/news.json?_=' + now,
+        'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json?_=' + now
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            const newsItems = data.news || data.news?.news;
+            const loreItem = data.lore || data.news?.lore;
+            if (newsItems && Array.isArray(newsItems) && newsItems.length > 0) {
+              setNewsList(newsItems);
+              if (loreItem) setActiveArticle(loreItem);
+              return;
+            }
+          }
+        } catch {}
+      }
+    }
+    syncLiveNews();
+  }, []);
 
   const handleFilter = (tag) => {
     setSelectedTag(tag);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X, ShieldAlert } from 'lucide-react';
 import { SERVER_PROTOCOLS, ROLE_DISCLAIMER } from '../../data/rulesData';
+import { getSwarmBridgeUrl } from '../../services/swarmClient';
 
 export default function RulesModal({ isOpen, onClose }) {
   const [protocols, setProtocols] = useState(() => {
@@ -25,31 +26,32 @@ export default function RulesModal({ isOpen, onClose }) {
   // Sincronización en vivo con el Servidor Central / Swarm Bridge
   useEffect(() => {
     async function syncRules() {
-      try {
-        const res = await fetch('http://localhost:19842/api/rules');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.protocols && Array.isArray(data.protocols) && data.protocols.length > 0) {
-            setProtocols(data.protocols);
-            if (data.roleDisclaimer) setRoleDisclaimer(data.roleDisclaimer);
-            localStorage.setItem('apocalipto_pz_rules', JSON.stringify(data.protocols));
-            if (data.roleDisclaimer) localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(data.roleDisclaimer));
-            return;
-          }
-        }
-      } catch {}
+      const now = Date.now();
+      const bridgeUrl = typeof getSwarmBridgeUrl === 'function' ? getSwarmBridgeUrl() : 'http://127.0.0.1:19842';
+      const endpoints = [
+        bridgeUrl + '/api/rules?_=' + now,
+        'http://127.0.0.1:19842/api/rules?_=' + now,
+        'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/rules.json?_=' + now,
+        'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json?_=' + now
+      ];
 
-      // Fallback remoto para jugadores externos
-      try {
-        const remoteRes = await fetch('https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/rules.json');
-        if (remoteRes.ok) {
-          const rData = await remoteRes.json();
-          if (rData && rData.protocols && Array.isArray(rData.protocols)) {
-            setProtocols(rData.protocols);
-            if (rData.roleDisclaimer) setRoleDisclaimer(rData.roleDisclaimer);
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            const protoList = data.protocols || data.rules?.protocols;
+            const disclaimer = data.roleDisclaimer || data.rules?.roleDisclaimer;
+            if (protoList && Array.isArray(protoList) && protoList.length > 0) {
+              setProtocols(protoList);
+              if (disclaimer) setRoleDisclaimer(disclaimer);
+              localStorage.setItem('apocalipto_pz_rules', JSON.stringify(protoList));
+              if (disclaimer) localStorage.setItem('apocalipto_pz_role_disclaimer', JSON.stringify(disclaimer));
+              return;
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
 
     syncRules();
