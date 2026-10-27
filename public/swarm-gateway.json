@@ -1,5 +1,5 @@
 {
-  "gatewayUrl": "https://viewers-volunteers-charges-management.trycloudflare.com",
+  "gatewayUrl": "https://literally-estimation-audio-website.trycloudflare.com",
   "gameTunnel": {
     "host": "rails-switching.tun.ply.gg",
     "port": 63854,
@@ -14,7 +14,7 @@
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
   "sha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
   "changelog": "Versión 1.2.9: Auto-sanitización vanilla garantizada tras conexión, compatibilidad total con servidores externos.",
-  "updatedAt": "2026-10-27T14:14:51.555Z",
+  "updatedAt": "2026-10-27T14:14:59.636Z",
   "installerSha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
   "launcherVersion": "1.3.1",
   "launcherSha256": "E4D8D12AF65402617A4EEF4AB12B77CDEBD9313C355DF1E6FD7E3B27F240E1E8",
