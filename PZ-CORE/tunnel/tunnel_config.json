@@ -1,20 +1,20 @@
 {
   "gameTunnel": {
-    "host": "rails-switching.tun.ply.gg",
-    "ip": "147.185.221.215",
-    "port": 63854,
+    "host": "190.237.3.75",
+    "ip": "190.237.3.75",
+    "port": 16261,
     "localPort": 16261,
     "protocol": "UDP",
-    "provider": "Playit.gg",
-    "datacenter": "Santiago, Chile",
-    "queryPort": 63854,
-    "raknetPort": 63855
+    "provider": "Steam Datagram Relay (Valve)",
+    "queryPort": 16261,
+    "raknetPort": 16262,
+    "useSteamRelay": true
   },
   "bridgeTunnel": {
-    "url": "https://compressed-upcoming-parker-bronze.trycloudflare.com",
+    "url": "https://athletic-grant-legendary-meters.trycloudflare.com",
     "localPort": 19842,
     "protocol": "HTTPS",
     "provider": "Cloudflare Tunnel"
   },
-  "configuredAt": "2026-10-25T15:46:29.953Z"
+  "configuredAt": "2026-10-27T14:21:26.001Z"
 }

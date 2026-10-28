@@ -676,7 +676,7 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
       message: `Enlace P2P establecido como ${playerName}. Iniciando Project Zomboid...`
     };
   } catch (err) {
-    const fallbackTarget = '147.185.221.215:63854';
+    const fallbackTarget = '190.237.3.75:16261';
     try {
       const { invoke } = await import('@tauri-apps/api/tauri');
       await invoke('launch_steam_game', {
@@ -694,10 +694,10 @@ export async function launchProjectZomboid(nodeId, faction, username, perfMode =
       success: true,
       game: 'Project Zomboid (Build 42)',
       username: username || 'Superviviente',
-      serverHost: 'rails-switching.tun.ply.gg',
-      serverPort: 63854,
+      serverHost: '190.237.3.75',
+      serverPort: 16261,
       isRemote: true,
-      message: 'Project Zomboid iniciado vía Steam hacia Apocalipto PZ.'
+      message: 'Project Zomboid iniciado vía Steam Datagram Relay hacia Apocalipto PZ.'
     };
   }
 }
