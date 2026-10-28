@@ -376,7 +376,7 @@ local function tryConnect()
             "",
             targetPort,
             "",
-            true,
+            false,
             true,
             1
         )
@@ -474,8 +474,8 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
 
         // Si el host es el dominio del túnel Playit, resolvemos su IP directa para evitar fallos de DNS.
         // Si es loopback (127.0.0.1), cambiamos a la LAN IP del host (192.168.0.101) porque Steam Networking rechaza 127.0.0.1.
-        let (clean_ip, clean_port) = if raw_host == "rails-switching.tun.ply.gg" || raw_host == "147.185.221.215" || raw_host == "190.237.3.75" {
-            ("190.237.3.75".to_string(), 16261)
+        let (clean_ip, clean_port) = if raw_host == "rails-switching.tun.ply.gg" || raw_host == "147.185.221.215" {
+            ("147.185.221.215".to_string(), 63854)
         } else if raw_host == "127.0.0.1" || raw_host == "localhost" || raw_host.is_empty() {
             ("192.168.0.101".to_string(), 16261)
         } else {
@@ -597,12 +597,12 @@ fn launch_steam_game(connect_address: String, username: String, faction: String)
                         if acc_exists.is_err() {
                             let _ = conn.execute(
                                 "INSERT INTO account (serverId, username, password, playerFirstAndLastName, isSavePassword, isUseSteamRelay, authType, lastLogon)
-                                 VALUES (?1, ?2, ?3, ?4, 1, 1, 1, datetime('now', 'localtime'))",
+                                 VALUES (?1, ?2, ?3, ?4, 1, 0, 1, datetime('now', 'localtime'))",
                                 rusqlite::params![sid, clean_user, b_pwd, clean_faction],
                             );
                         } else {
                             let _ = conn.execute(
-                                "UPDATE account SET password = ?3, playerFirstAndLastName = ?4, isSavePassword = 1, isUseSteamRelay = 1, lastLogon = datetime('now', 'localtime') WHERE serverId = ?1 AND username = ?2",
+                                "UPDATE account SET password = ?3, playerFirstAndLastName = ?4, isSavePassword = 1, isUseSteamRelay = 0, lastLogon = datetime('now', 'localtime') WHERE serverId = ?1 AND username = ?2",
                                 rusqlite::params![sid, clean_user, b_pwd, clean_faction],
                             );
                         }
