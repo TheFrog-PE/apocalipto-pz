@@ -8,16 +8,16 @@
     "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.2.9",
+  "latestVersion": "1.3.3",
   "minRequiredVersion": "1.2.8",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
-  "changelog": "Versión 1.2.9: Auto-sanitización vanilla garantizada tras conexión, compatibilidad total con servidores externos.",
-  "updatedAt": "2026-10-27T14:21:25.986Z",
-  "installerSha256": "a58c5e3986bd57f342c68507e187a63cefa9c16065d3de0ad8324f50b3ea709f",
-  "launcherVersion": "1.3.1",
-  "launcherSha256": "E4D8D12AF65402617A4EEF4AB12B77CDEBD9313C355DF1E6FD7E3B27F240E1E8",
+  "sha256": "6abfeb1a499e62792489f56a981fec4eee5c310fdfe74224c062c5ece309ddf0",
+  "changelog": "Versión 1.3.3: Sincronización en vivo de reglas y noticias, rendimiento optimizado y estabilidad P2P.",
+  "updatedAt": "2026-10-28T14:45:42.775413+00:00",
+  "installerSha256": "6abfeb1a499e62792489f56a981fec4eee5c310fdfe74224c062c5ece309ddf0",
+  "launcherVersion": "1.3.3",
+  "launcherSha256": "6abfeb1a499e62792489f56a981fec4eee5c310fdfe74224c062c5ece309ddf0",
   "latest_launcher_version": "1.3.3",
   "launcher_sha256": "6abfeb1a499e62792489f56a981fec4eee5c310fdfe74224c062c5ece309ddf0",
   "launcher_download_size": 60820937,
@@ -26,15 +26,41 @@
       {
         "id": "alpha",
         "number": "01",
-        "title": "PROTOCOLO ALFA MODIFICADO",
-        "clause": "Regla de prueba"
+        "title": "PROTOCOLO ALFA: TOLERANCIA CERO",
+        "category": "CONDUCTA",
+        "titleColor": "text-zinc-100",
+        "clause": "Tolerancia cero para el uso de programas de terceros, exploits de duplicación o manipulación del juego. La infracción resulta en un PERMABAN DIRECTO sin posibilidad de apelación. Mantén el rol en todo momento."
+      },
+      {
+        "id": "beta",
+        "number": "02",
+        "title": "PROTOCOLO BETA: ZONAS SEGURAS Y RAIDEO",
+        "category": "ZONIFICACIÓN",
+        "titleColor": "text-amber-500",
+        "clause": "Cualquier edificio del mapa puede ser reclamado como refugio legítimo. Los asaltos, incursiones o ataques a refugios solo están permitidos exclusivamente desde el Viernes a las 18:00 hasta el Domingo a las 23:59 (Hora del Enjambre)."
+      },
+      {
+        "id": "gamma",
+        "number": "03",
+        "title": "PROTOCOLO GAMMA: FRECUENCIAS DE RADIO",
+        "category": "COMUNICACIONES",
+        "titleColor": "text-cyan-400",
+        "clause": "El uso de canales externos, mapas y grupos de WhatsApp está permitido como apoyo logístico táctico, pero no deben reemplazar por completo la interacción u ambientación dentro del Enjambre."
+      },
+      {
+        "id": "omega",
+        "number": "04",
+        "title": "PROTOCOLO OMEGA (NOCHE DE PURGA)",
+        "category": "LA PURGA",
+        "titleColor": "text-amber-400",
+        "clause": "El último fin de semana de cada mes, todos los protocolos y zonas seguras quedan anulados. Sin leyes, sin refugios, sobrevivir por cualquier medio es la única ley."
       }
     ],
     "roleDisclaimer": {
       "title": "SOBRE EL ROL",
-      "text": "Texto de prueba"
+      "text": "Los jugadores tienen total libertad para hacer alianzas, gankear, traicionar o firmar tratados. Sin embargo, hacer metagaming o trasladar conflictos del juego al entorno IRL (en la vida real) está completamente prohibido. Lo que pasa en el Enjambre, se queda en el Enjambre. Cualquier conducta de toxicidad, acoso o intimidación resultará en un permaban inmediato."
     },
-    "updatedAt": 1793059860053
+    "updatedAt": 1793198845000
   },
   "news": {
     "lore": {
