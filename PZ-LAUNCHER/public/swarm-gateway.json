@@ -1,28 +1,26 @@
 {
   "gatewayUrl": "https://athletic-grant-legendary-meters.trycloudflare.com",
   "gameTunnel": {
-    "host": "190.236.53.65",
-    "port": 16261,
+    "host": "rails-switching.tun.ply.gg",
+    "port": 63854,
     "protocol": "UDP",
-    "queryPort": 16261,
-    "raknetPort": 16262,
-    "provider": "Steam Datagram Relay (Valve)",
-    "useSteamRelay": true
+    "queryPort": 63854,
+    "raknetPort": 63855
   },
   "alfaNode": "The Frog Host (Apocalipto PZ)",
-  "latestVersion": "1.3.5",
-  "minRequiredVersion": "1.3.5",
+  "latestVersion": "1.3.6",
+  "minRequiredVersion": "1.3.6",
   "worldEpoch": "20261025-day1-reset",
   "downloadUrl": "https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/downloads/ApocaliptoPZ-Setup.exe",
-  "sha256": "53dee02c207634326bc31399e127547005bec1d457aaec3353c27f0daf774224",
-  "changelog": "Versión 1.3.5: Conexión nativa Valve Steam Datagram Relay (SDR) automatizada vía Launcher.",
-  "updatedAt": "2026-10-28T17:26:07.381298+00:00",
-  "installerSha256": "53dee02c207634326bc31399e127547005bec1d457aaec3353c27f0daf774224",
-  "launcherVersion": "1.3.5",
-  "launcherSha256": "53dee02c207634326bc31399e127547005bec1d457aaec3353c27f0daf774224",
-  "latest_launcher_version": "1.3.5",
-  "launcher_sha256": "53dee02c207634326bc31399e127547005bec1d457aaec3353c27f0daf774224",
-  "launcher_download_size": 60824514,
+  "sha256": "897adaf67e5f0cfbe7e928cde5fe084f4d3c1c25d0c6c54299d2b8d9537a4524",
+  "changelog": "Versión 1.3.6: Enrutamiento directo optimizado P2P Enjambre y sincronización de red.",
+  "updatedAt": "2026-10-28T17:53:13.588516+00:00",
+  "installerSha256": "897adaf67e5f0cfbe7e928cde5fe084f4d3c1c25d0c6c54299d2b8d9537a4524",
+  "launcherVersion": "1.3.6",
+  "launcherSha256": "897adaf67e5f0cfbe7e928cde5fe084f4d3c1c25d0c6c54299d2b8d9537a4524",
+  "latest_launcher_version": "1.3.6",
+  "launcher_sha256": "897adaf67e5f0cfbe7e928cde5fe084f4d3c1c25d0c6c54299d2b8d9537a4524",
+  "launcher_download_size": 60826146,
   "rules": {
     "protocols": [
       {

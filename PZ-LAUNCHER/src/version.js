@@ -1,4 +1,4 @@
-export const LAUNCHER_VERSION = '1.3.5';
+export const LAUNCHER_VERSION = '1.3.6';
 export const BOOTSTRAP_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/public/swarm-gateway.json';
 export const FALLBACK_REGISTRY_URL = 'https://raw.githubusercontent.com/TheFrog-PE/apocalipto-pz/main/PZ-LAUNCHER/public/swarm-gateway.json';
 export const DEFAULT_DOWNLOAD_URL = 'https://github.com/TheFrog-PE/apocalipto-pz/raw/main/public/downloads/ApocaliptoPZ-Setup.exe';
