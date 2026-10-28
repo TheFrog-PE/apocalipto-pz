@@ -1,14 +1,14 @@
 {
   "gameTunnel": {
-    "host": "rails-switching.tun.ply.gg",
-    "ip": "147.185.221.215",
-    "port": 63854,
+    "host": "190.236.53.65",
+    "ip": "190.236.53.65",
+    "port": 16261,
     "localPort": 16261,
     "protocol": "UDP",
-    "provider": "Playit.gg",
-    "datacenter": "Santiago, Chile",
-    "queryPort": 63854,
-    "raknetPort": 63855
+    "provider": "Steam Datagram Relay (Valve)",
+    "queryPort": 16261,
+    "raknetPort": 16262,
+    "useSteamRelay": true
   },
   "bridgeTunnel": {
     "url": "https://athletic-grant-legendary-meters.trycloudflare.com",
