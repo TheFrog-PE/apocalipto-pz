@@ -1,6 +1,6 @@
 [package]
 name = "apocalipto-pz-launcher"
-version = "1.3.3"
+version = "1.3.4"
 description = "Launcher Oficial de Apocalipto PZ - Red P2P Descentralizada Build 42"
 authors = ["Apocalipto PZ Team"]
 edition = "2021"
